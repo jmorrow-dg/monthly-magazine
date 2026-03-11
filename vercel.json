@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "app/api/issues/[issueId]/pdf/route.ts": {
+      "maxDuration": 300,
+      "memory": 3009
+    },
+    "app/api/issues/generate/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/issues/[issueId]/publish/route.ts": {
+      "maxDuration": 300,
+      "memory": 3009
+    }
+  }
+}

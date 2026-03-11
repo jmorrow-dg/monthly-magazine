@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --dg-bg: #141414;
+  --dg-card: #222222;
+  --dg-card2: #1C1C1C;
+  --dg-gold: #B8860B;
+  --dg-gold-dark: #8B6914;
+  --dg-white: #FFFFFF;
+  --dg-off-white: #F0F0F0;
+  --dg-light-grey: #B0B0B0;
+  --dg-mid-grey: #888888;
+  --dg-dark-grey: #666666;
+  --dg-rule: #333333;
+  --dg-red: #C0392B;
+  --dg-green: #22C55E;
+  --dg-purple: #8B5CF6;
+  --dg-blue: #3B82F6;
+}
+
+@theme inline {
+  --color-background: var(--dg-bg);
+  --color-foreground: var(--dg-white);
+  --color-dg-bg: var(--dg-bg);
+  --color-dg-card: var(--dg-card);
+  --color-dg-card2: var(--dg-card2);
+  --color-dg-gold: var(--dg-gold);
+  --color-dg-gold-dark: var(--dg-gold-dark);
+  --color-dg-light-grey: var(--dg-light-grey);
+  --color-dg-mid-grey: var(--dg-mid-grey);
+  --color-dg-dark-grey: var(--dg-dark-grey);
+  --color-dg-rule: var(--dg-rule);
+  --color-dg-red: var(--dg-red);
+  --color-dg-green: var(--dg-green);
+  --color-dg-purple: var(--dg-purple);
+  --color-dg-blue: var(--dg-blue);
+}
+
+body {
+  background: var(--dg-bg);
+  color: var(--dg-white);
+  font-family: 'Inter', sans-serif;
+}
