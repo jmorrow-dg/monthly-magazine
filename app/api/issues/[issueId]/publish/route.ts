@@ -29,6 +29,13 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
+    if (issue.qa_passed !== true) {
+      return NextResponse.json(
+        { error: 'QA review must pass before publishing. Run QA from the issue editor.' },
+        { status: 400 },
+      );
+    }
+
     // Check for optional query params
     let url: URL | null = null;
     try {

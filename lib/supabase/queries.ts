@@ -1,5 +1,6 @@
 import { getSupabase } from './client';
 import type { Issue, IssueSummary, IssueStatus, IssuePage, IssueAsset, IssueReview } from '@/lib/types/issue';
+import type { QAReport, QAReportRow } from '@/lib/types/qa';
 
 // ── Slug Utilities ──────────────────────────────────────────────────────────
 
@@ -296,6 +297,47 @@ export async function getIssueReviews(issueId: string): Promise<IssueReview[]> {
 
   if (error) throw new Error(`Failed to fetch reviews: ${error.message}`);
   return (data || []) as IssueReview[];
+}
+
+// ── QA Reports ──────────────────────────────────────────────────────────────
+
+export async function createQAReport(report: QAReport): Promise<QAReportRow> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('qa_reports')
+    .insert({
+      issue_id: report.issue_id,
+      qa_score: report.qa_score,
+      score_breakdown: report.score_breakdown,
+      violations: report.violations,
+      claims: report.claims,
+      unsupported_claim_count: report.unsupported_claim_count,
+      citation_coverage_pct: report.citation_coverage_pct,
+      passed: report.passed,
+      threshold_applied: report.threshold_applied,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to create QA report: ${error.message}`);
+  return data as QAReportRow;
+}
+
+export async function getLatestQAReport(issueId: string): Promise<QAReportRow | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('qa_reports')
+    .select('*')
+    .eq('issue_id', issueId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw new Error(`Failed to fetch QA report: ${error.message}`);
+  }
+  return data as QAReportRow;
 }
 
 // ── Storage ─────────────────────────────────────────────────────────────────

@@ -10,14 +10,29 @@ const STATUS_STYLES: Record<IssueStatus, { bg: string; text: string; border: str
   archived: { bg: 'rgba(102,102,102,0.12)', text: '#666666', border: 'rgba(102,102,102,0.3)' },
 };
 
-export default function IssueStatusBadge({ status }: { status: IssueStatus }) {
+export default function IssueStatusBadge({
+  status,
+  qaPassed,
+}: {
+  status: IssueStatus;
+  qaPassed?: boolean | null;
+}) {
   const style = STATUS_STYLES[status];
   return (
-    <span
-      className="inline-block px-2.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider"
-      style={{ backgroundColor: style.bg, color: style.text, border: `1px solid ${style.border}` }}
-    >
-      {status}
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className="inline-block px-2.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider"
+        style={{ backgroundColor: style.bg, color: style.text, border: `1px solid ${style.border}` }}
+      >
+        {status}
+      </span>
+      {qaPassed !== undefined && qaPassed !== null && (
+        <span
+          className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+          title={qaPassed ? 'QA Passed' : 'QA Failed'}
+          style={{ backgroundColor: qaPassed ? '#22C55E' : '#C0392B' }}
+        />
+      )}
     </span>
   );
 }

@@ -10,6 +10,7 @@ import IssueEditorSkeleton from '@/components/admin/IssueEditorSkeleton';
 import ContentIndicator from '@/components/admin/ContentIndicator';
 import SectionReadiness, { computeArrayReadiness } from '@/components/admin/SectionReadiness';
 import AIGeneratePanel from '@/components/admin/AIGeneratePanel';
+import QAPanel from '@/components/admin/QAPanel';
 import DistributeButton from '@/components/admin/DistributeButton';
 import { INLINE_LIMITS, CONTENT_LIMITS } from '@/lib/constants/content-limits';
 import { monthName } from '@/lib/utils/format-date';
@@ -265,7 +266,7 @@ export default function IssueEditorPage() {
             <h1 className="font-[family-name:var(--font-playfair)] text-xl font-bold text-white">
               Edition #{String(issue.edition).padStart(2, '0')}
             </h1>
-            <IssueStatusBadge status={issue.status} />
+            <IssueStatusBadge status={issue.status} qaPassed={issue.qa_passed} />
           </div>
           <p className="text-[#888888] text-sm">{monthName(issue.month)} {issue.year}</p>
         </div>
@@ -602,7 +603,13 @@ export default function IssueEditorPage() {
             {issue.status === 'approved' && (
               <button
                 onClick={publishIssue}
-                className="w-full py-2 text-xs font-semibold bg-[#B8860B]/15 text-[#B8860B] border border-[#B8860B]/30 rounded-lg hover:bg-[#B8860B]/25 transition-colors"
+                disabled={issue.qa_passed !== true}
+                className={`w-full py-2 text-xs font-semibold rounded-lg transition-colors ${
+                  issue.qa_passed === true
+                    ? 'bg-[#B8860B]/15 text-[#B8860B] border border-[#B8860B]/30 hover:bg-[#B8860B]/25'
+                    : 'bg-[#333333]/50 text-[#666666] border border-[#333333] cursor-not-allowed'
+                }`}
+                title={issue.qa_passed !== true ? 'QA review must pass before publishing' : undefined}
               >
                 Publish Issue
               </button>
@@ -632,6 +639,17 @@ export default function IssueEditorPage() {
                 </div>
               </>
             )}
+          </div>
+
+          {/* QA Review */}
+          <div className="mt-4">
+            <QAPanel
+              issueId={issueId}
+              qaScore={issue.qa_score}
+              qaPassed={issue.qa_passed}
+              lastQaRunAt={issue.last_qa_run_at}
+              onQAComplete={loadIssue}
+            />
           </div>
 
           {/* Info */}

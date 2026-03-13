@@ -174,6 +174,10 @@ export type Issue = {
   beehiiv_summary: string | null;
   welcome_email_snippet: string | null;
   linkedin_snippets: LinkedInSnippet[] | null;
+  // QA Engine
+  qa_score: number | null;
+  qa_passed: boolean | null;
+  last_qa_run_at: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;
