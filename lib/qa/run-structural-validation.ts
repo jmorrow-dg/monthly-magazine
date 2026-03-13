@@ -1,101 +1,109 @@
 // ============================================================
-// QA Check: Structural Completeness (max 10 points)
-// Validates all required sections are populated with minimum items.
+// QA: Structural Validation (max 10 points)
+// Rule-based completeness checks for all required sections.
 // ============================================================
 
-import type { QACheckInput, QACheckResult, QAViolation } from '../../types/qa';
-import { REQUIRED_SECTIONS, COVER_STORY_REQUIRED_FIELDS } from '../constants';
+import type { QACheckInput, StructuralFinding, QACheckResult } from '../types/qa';
+import { REQUIRED_SECTIONS, COVER_STORY_REQUIRED_FIELDS } from './constants';
 
-export function checkStructural(input: QACheckInput): QACheckResult {
-  const violations: QAViolation[] = [];
-  let penaltyPoints = 0;
+export function runStructuralValidation(input: QACheckInput): QACheckResult {
+  const findings: StructuralFinding[] = [];
 
   // Check each required section
   for (const [key, config] of Object.entries(REQUIRED_SECTIONS)) {
     const value = getSectionValue(input, key);
 
     if (value === null || value === undefined) {
-      violations.push({
-        check: 'structural_completeness',
-        severity: 'error',
+      findings.push({
         section: config.label,
-        field: key,
         message: `${config.label} section is missing entirely.`,
-        suggestion: `Generate or add content for the ${config.label} section.`,
+        severity: 'blocker',
       });
-      penaltyPoints += 2;
       continue;
     }
 
-    // For string fields (editorial_note, why_this_matters)
     if (typeof value === 'string') {
       if (value.trim().length === 0) {
-        violations.push({
-          check: 'structural_completeness',
-          severity: 'error',
+        findings.push({
           section: config.label,
-          field: key,
           message: `${config.label} is empty.`,
-          suggestion: `Add content for ${config.label}.`,
+          severity: 'error',
         });
-        penaltyPoints += 1.5;
       }
       continue;
     }
 
-    // For object fields (cover_story_json)
+    // Cover story object
     if (key === 'cover_story_json' && typeof value === 'object' && !Array.isArray(value)) {
       const cs = value as Record<string, unknown>;
       for (const field of COVER_STORY_REQUIRED_FIELDS) {
         const fieldVal = cs[field];
         if (!fieldVal || (typeof fieldVal === 'string' && fieldVal.trim().length === 0)) {
-          violations.push({
-            check: 'structural_completeness',
-            severity: 'error',
+          findings.push({
             section: 'Cover Story',
-            field,
             message: `Cover Story field "${field}" is missing or empty.`,
-            suggestion: `Add content for the Cover Story ${field} field.`,
+            severity: 'error',
           });
-          penaltyPoints += 0.5;
         }
       }
       continue;
     }
 
-    // For array sections
+    // Array sections
     if (Array.isArray(value)) {
       if (value.length === 0) {
-        violations.push({
-          check: 'structural_completeness',
-          severity: 'error',
+        findings.push({
           section: config.label,
-          field: key,
           message: `${config.label} section has no items.`,
-          suggestion: `Add at least ${config.minItems} items to ${config.label}.`,
+          severity: 'error',
         });
-        penaltyPoints += 2;
       } else if (value.length < config.minItems) {
-        violations.push({
-          check: 'structural_completeness',
-          severity: 'warning',
+        findings.push({
           section: config.label,
-          field: key,
           message: `${config.label} has ${value.length} items, minimum recommended is ${config.minItems}.`,
-          suggestion: `Consider adding more items to ${config.label}.`,
+          severity: 'warning',
         });
-        penaltyPoints += 1;
       }
     }
   }
 
-  const score = Math.max(0, 10 - penaltyPoints);
+  // Validate linkedin_snippets count (expected 3)
+  if (input.linkedin_snippets) {
+    if (input.linkedin_snippets.length !== 3) {
+      findings.push({
+        section: 'LinkedIn Snippets',
+        message: `Expected 3 LinkedIn snippets, found ${input.linkedin_snippets.length}.`,
+        severity: 'warning',
+      });
+    }
+  }
+
+  // Validate provenance for signals mode
+  if (input.generation_mode === 'signals') {
+    if (!input.source_signal_ids || input.source_signal_ids.length === 0) {
+      findings.push({
+        section: 'Provenance',
+        message: 'Signals mode issue has no source_signal_ids recorded.',
+        severity: 'warning',
+      });
+    }
+  }
+
+  // Score calculation
+  const blockerCount = findings.filter(f => f.severity === 'blocker').length;
+  const errorCount = findings.filter(f => f.severity === 'error').length;
+  const warningCount = findings.filter(f => f.severity === 'warning').length;
+
+  let score = 10;
+  score -= blockerCount * 3;
+  score -= errorCount * 1.5;
+  score -= warningCount * 0.5;
 
   return {
     category: 'structural_completeness',
-    score: Math.round(score * 100) / 100,
+    score: Math.max(0, Math.round(score * 100) / 100),
     max_score: 10,
-    violations,
+    structural_findings: findings,
   };
 }
 

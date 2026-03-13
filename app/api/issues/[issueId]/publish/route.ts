@@ -29,9 +29,9 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    if (issue.qa_passed !== true) {
+    if (issue.qa_passed !== true && issue.qa_override !== true) {
       return NextResponse.json(
-        { error: 'QA review must pass before publishing. Run QA from the issue editor.' },
+        { error: 'QA review must pass before publishing. Run QA from the issue editor, or use the QA override.' },
         { status: 400 },
       );
     }

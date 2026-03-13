@@ -603,13 +603,13 @@ export default function IssueEditorPage() {
             {issue.status === 'approved' && (
               <button
                 onClick={publishIssue}
-                disabled={issue.qa_passed !== true}
+                disabled={issue.qa_passed !== true && issue.qa_override !== true}
                 className={`w-full py-2 text-xs font-semibold rounded-lg transition-colors ${
-                  issue.qa_passed === true
+                  issue.qa_passed === true || issue.qa_override === true
                     ? 'bg-[#B8860B]/15 text-[#B8860B] border border-[#B8860B]/30 hover:bg-[#B8860B]/25'
                     : 'bg-[#333333]/50 text-[#666666] border border-[#333333] cursor-not-allowed'
                 }`}
-                title={issue.qa_passed !== true ? 'QA review must pass before publishing' : undefined}
+                title={issue.qa_passed !== true && issue.qa_override !== true ? 'QA review must pass before publishing (or use QA override)' : undefined}
               >
                 Publish Issue
               </button>
@@ -647,6 +647,7 @@ export default function IssueEditorPage() {
               issueId={issueId}
               qaScore={issue.qa_score}
               qaPassed={issue.qa_passed}
+              qaOverride={issue.qa_override}
               lastQaRunAt={issue.last_qa_run_at}
               onQAComplete={loadIssue}
             />

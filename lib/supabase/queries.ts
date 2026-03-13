@@ -308,12 +308,24 @@ export async function createQAReport(report: QAReport): Promise<QAReportRow> {
     .insert({
       issue_id: report.issue_id,
       qa_score: report.qa_score,
+      qa_status: report.qa_status,
       score_breakdown: report.score_breakdown,
-      violations: report.violations,
-      claims: report.claims,
+      citation_coverage_score: report.citation_coverage_score,
       unsupported_claim_count: report.unsupported_claim_count,
-      citation_coverage_pct: report.citation_coverage_pct,
-      passed: report.passed,
+      structural_error_count: report.structural_error_count,
+      editorial_violation_count: report.editorial_violation_count,
+      numerical_mismatch_count: report.numerical_mismatch_count,
+      reasoning_flag_count: report.reasoning_flag_count,
+      structural_findings: report.structural_findings,
+      unsupported_claims: report.unsupported_claims,
+      citation_map: report.citation_map,
+      numerical_mismatches: report.numerical_mismatches,
+      editorial_flags: report.editorial_flags,
+      llm_review_findings: report.llm_review_findings,
+      derivative_consistency_findings: report.derivative_consistency_findings,
+      selected_references: report.selected_references,
+      summary: report.summary,
+      passed: report.qa_passed,
       threshold_applied: report.threshold_applied,
     })
     .select()
@@ -338,6 +350,19 @@ export async function getLatestQAReport(issueId: string): Promise<QAReportRow | 
     throw new Error(`Failed to fetch QA report: ${error.message}`);
   }
   return data as QAReportRow;
+}
+
+export async function getQAHistory(issueId: string, limit = 10): Promise<QAReportRow[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('qa_reports')
+    .select('*')
+    .eq('issue_id', issueId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to fetch QA history: ${error.message}`);
+  return (data || []) as QAReportRow[];
 }
 
 // ── Storage ─────────────────────────────────────────────────────────────────

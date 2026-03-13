@@ -1,0 +1,137 @@
+// ============================================================
+// QA: LLM Editorial Review (max 10 points)
+// Uses Claude to identify reasoning issues, unsupported conclusions,
+// prediction-as-fact, scope drift, tone issues, and more.
+// ============================================================
+
+import Anthropic from '@anthropic-ai/sdk';
+import type { QACheckInput, QACheckResult, LLMReviewFinding, LLMFindingType } from '../types/qa';
+import { extractIssueSections, getCoreContentSections } from './extract-issue-sections';
+
+const VALID_FINDING_TYPES: LLMFindingType[] = [
+  'unsupported_claim',
+  'overstated_conclusion',
+  'weak_evidence',
+  'prediction_as_fact',
+  'scope_drift',
+  'tone_issue',
+  'operator_recommendation_not_grounded',
+];
+
+/**
+ * Run an LLM-powered editorial review to identify reasoning and editorial issues.
+ * Returns reasoning_validity score (0-10) and detailed findings.
+ */
+export async function runLLMEditorialReview(input: QACheckInput): Promise<QACheckResult> {
+  const sections = extractIssueSections(input);
+  const coreSections = getCoreContentSections(sections);
+
+  if (coreSections.length === 0) {
+    return {
+      category: 'reasoning_validity',
+      score: 10,
+      max_score: 10,
+      llm_review_findings: [],
+    };
+  }
+
+  const sectionBlock = coreSections
+    .map(s => `[${s.section_label}]\n${s.raw_text}`)
+    .join('\n\n---\n\n');
+
+  // Build signal context for the LLM
+  const signalContext = input.source_signals.length > 0
+    ? `\n\nSOURCE SIGNALS (for reference):\n${input.source_signals.slice(0, 10).map(s =>
+        `- ${s.title}: ${s.summary.slice(0, 150)}`,
+      ).join('\n')}`
+    : '';
+
+  const findings = await callEditorialReviewLLM(sectionBlock, signalContext);
+
+  // Score calculation
+  const errorCount = findings.filter(f => f.severity === 'error').length;
+  const warningCount = findings.filter(f => f.severity === 'warning').length;
+  let score = 10 - errorCount * 2 - warningCount * 0.5;
+
+  return {
+    category: 'reasoning_validity',
+    score: Math.max(0, Math.min(10, Math.round(score * 100) / 100)),
+    max_score: 10,
+    llm_review_findings: findings,
+  };
+}
+
+async function callEditorialReviewLLM(
+  contentBlock: string,
+  signalContext: string,
+): Promise<LLMReviewFinding[]> {
+  try {
+    const anthropic = new Anthropic();
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      system: `You are a senior editorial reviewer for a professional AI strategy magazine. Your job is to identify reasoning, editorial, and factual quality issues in the content.
+
+For each issue you find, classify it as one of these finding types:
+- unsupported_claim: A factual claim with no clear evidence or source
+- overstated_conclusion: A conclusion that goes beyond what the evidence supports
+- weak_evidence: An assertion backed by thin or circumstantial evidence
+- prediction_as_fact: A speculation or prediction presented as established fact
+- scope_drift: Content that strays from the section's intended topic
+- tone_issue: Language that is too casual, promotional, or inconsistent with professional editorial standards
+- operator_recommendation_not_grounded: A practical recommendation not backed by evidence in the content
+
+For each finding, also assign a severity:
+- error: Significant issue that undermines credibility
+- warning: Moderate issue that should be addressed
+- info: Minor issue or suggestion for improvement
+
+Be precise and specific. Only flag genuine issues. Do not flag:
+- Well-supported strategic analysis based on provided signals
+- Reasonable professional projections clearly framed as forward-looking
+- Standard editorial commentary or framing
+
+Aim for quality over quantity. 5-15 findings is typical for a full issue.`,
+      messages: [{
+        role: 'user',
+        content: `Review this magazine content for editorial and reasoning issues:
+
+${contentBlock}${signalContext}
+
+Return a JSON array of findings:
+[{"section": "section name", "finding_type": "type", "message": "specific description", "severity": "error|warning|info", "confidence_score": 0.0-1.0}]
+
+Return ONLY the JSON array, no other text.`,
+      }],
+    });
+
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+
+    const parsed = JSON.parse(jsonMatch[0]) as LLMReviewFinding[];
+
+    // Validate and sanitise findings
+    return parsed
+      .filter(f =>
+        f.section &&
+        f.message &&
+        VALID_FINDING_TYPES.includes(f.finding_type) &&
+        ['error', 'warning', 'info'].includes(f.severity),
+      )
+      .map(f => ({
+        section: f.section,
+        finding_type: f.finding_type,
+        message: f.message,
+        severity: f.severity,
+        confidence_score: typeof f.confidence_score === 'number'
+          ? Math.min(1, Math.max(0, f.confidence_score))
+          : 0.7,
+      }));
+  } catch (error) {
+    console.error('LLM editorial review failed:', error);
+    // Return empty findings on failure (non-fatal)
+    return [];
+  }
+}

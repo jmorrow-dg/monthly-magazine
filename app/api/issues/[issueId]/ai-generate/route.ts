@@ -23,9 +23,8 @@ import { fetchMonthlySignals } from '@/lib/intelligence/fetch-signals';
 import { fetchMonthlyClusters, findCoverStoryCluster } from '@/lib/intelligence/fetch-clusters';
 import { fetchMonthlyTrends, findTopTrend } from '@/lib/intelligence/fetch-trends';
 import type { SignalContext } from '@/lib/intelligence/types';
-import { runQAPipeline } from '@/lib/qa/pipeline';
+import { runIssueQA } from '@/lib/qa/run-issue-qa';
 import { createQAReport } from '@/lib/supabase/queries';
-import type { QACheckInput, SourceSignalSummary } from '@/lib/types/qa';
 import type { Issue } from '@/lib/types/issue';
 
 export const maxDuration = 300;
@@ -206,50 +205,22 @@ export async function POST(request: Request, context: RouteContext) {
     let qaReport = null;
     try {
       if (updated) {
-        // Build source signals for grounding checks
-        const sourceSignals: SourceSignalSummary[] = signalContext
-          ? signalContext.signals.map((s) => ({
-              id: '',
-              title: s.title,
-              summary: s.summary,
-              why_it_matters: s.why_it_matters || null,
-              company: s.company || null,
-              category: s.category,
-              source: s.source,
-              source_url: s.source_url || null,
-              practical_implication: s.practical_implication || null,
-            }))
-          : [];
-
-        const qaInput: QACheckInput = {
-          issue_id: issueId,
-          cover_story: updated.cover_story_json as Record<string, unknown> | null,
-          implications: (updated.implications_json || []) as unknown as Record<string, unknown>[],
-          enterprise: (updated.enterprise_json || []) as unknown as Record<string, unknown>[],
-          industry_watch: (updated.industry_watch_json || []) as unknown as Record<string, unknown>[],
-          tools: (updated.tools_json || []) as unknown as Record<string, unknown>[],
-          playbooks: (updated.playbooks_json || []) as unknown as Record<string, unknown>[],
-          strategic_signals: (updated.strategic_signals_json || []) as unknown as Record<string, unknown>[],
-          briefing_prompts: (updated.briefing_prompts_json || []) as unknown as Record<string, unknown>[],
-          executive_briefing: (updated.executive_briefing_json || []) as unknown as Record<string, unknown>[],
-          ai_native_org: updated.ai_native_org_json as Record<string, unknown> | null,
-          editorial_note: updated.editorial_note,
-          why_this_matters: updated.why_this_matters,
-          executive_summary: updated.executive_summary,
-          beehiiv_summary: updated.beehiiv_summary,
-          welcome_email_snippet: updated.welcome_email_snippet,
-          linkedin_snippets: (updated.linkedin_snippets || null) as Record<string, unknown>[] | null,
-          source_signals: sourceSignals,
-        };
-
-        const report = await runQAPipeline(qaInput);
+        const report = await runIssueQA(updated);
         await createQAReport(report);
         await updateIssue(issueId, {
           qa_score: report.qa_score,
-          qa_passed: report.passed,
+          qa_passed: report.qa_passed,
+          qa_status: report.qa_status,
+          citation_coverage_score: report.citation_coverage_score,
+          unsupported_claim_count: report.unsupported_claim_count,
+          structural_error_count: report.structural_error_count,
+          editorial_violation_count: report.editorial_violation_count,
+          numerical_mismatch_count: report.numerical_mismatch_count,
+          reasoning_flag_count: report.reasoning_flag_count,
+          qa_summary: report.summary,
           last_qa_run_at: new Date().toISOString(),
         } as Partial<Issue>);
-        qaReport = { qa_score: report.qa_score, qa_passed: report.passed };
+        qaReport = { qa_score: report.qa_score, qa_passed: report.qa_passed };
       }
     } catch (qaError) {
       console.error('QA auto-trigger failed (non-fatal):', qaError);

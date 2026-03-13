@@ -177,7 +177,17 @@ export type Issue = {
   // QA Engine
   qa_score: number | null;
   qa_passed: boolean | null;
+  qa_status: string | null;
+  citation_coverage_score: number | null;
+  unsupported_claim_count: number | null;
+  structural_error_count: number | null;
+  editorial_violation_count: number | null;
+  numerical_mismatch_count: number | null;
+  reasoning_flag_count: number | null;
   last_qa_run_at: string | null;
+  qa_summary: string | null;
+  qa_override: boolean | null;
+  qa_override_reason: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;
