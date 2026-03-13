@@ -9,6 +9,10 @@ export const dynamic = 'force-dynamic';
  * Used in the Beehiiv welcome email so the link never goes stale.
  * Redirects to /issues/[issueId]/viewer for the most recent published issue.
  * Falls back to /issues if nothing is published yet.
+ *
+ * Resolution order:
+ * 1. Issue with is_latest = true (fast path via partial index)
+ * 2. Most recent published_at (fallback)
  */
 export default async function LatestRedirect() {
   const issue = await getLatestPublishedIssue();

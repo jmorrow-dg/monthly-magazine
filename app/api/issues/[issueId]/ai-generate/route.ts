@@ -19,8 +19,18 @@ import {
   generateRegionalSignals,
   generateGlobalLandscape,
 } from '@/lib/ai/generate-content';
+import { fetchMonthlySignals } from '@/lib/intelligence/fetch-signals';
+import { fetchMonthlyClusters, findCoverStoryCluster } from '@/lib/intelligence/fetch-clusters';
+import { fetchMonthlyTrends, findTopTrend } from '@/lib/intelligence/fetch-trends';
+import type { SignalContext } from '@/lib/intelligence/types';
+
+export const maxDuration = 300;
 
 type RouteContext = { params: Promise<{ issueId: string }> };
+
+type RequestBody =
+  | { mode?: 'sources'; sources: string[]; instructions?: string }
+  | { mode: 'signals'; monthYear: string; instructions?: string };
 
 export async function POST(request: Request, context: RouteContext) {
   const authenticated = await isAuthenticated();
@@ -36,39 +46,130 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Issue not found' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { sources, instructions } = body as { sources: string[]; instructions?: string };
+    const body = (await request.json()) as RequestBody;
+    const instructions = body.instructions;
 
-    if (!sources || sources.length === 0) {
-      return NextResponse.json({ error: 'At least one source is required' }, { status: 400 });
+    // Determine generation mode
+    const mode = body.mode || 'sources';
+
+    let sources: string[] = [];
+    let signalContext: SignalContext | undefined;
+    let sourceSignalIds: string[] | undefined;
+    let sourceClusterIds: string[] | undefined;
+    let sourceTrendIds: string[] | undefined;
+
+    if (mode === 'signals') {
+      const { monthYear } = body as { monthYear: string };
+      if (!monthYear || !/^\d{4}-\d{2}$/.test(monthYear)) {
+        return NextResponse.json(
+          { error: 'monthYear is required in YYYY-MM format for signals mode' },
+          { status: 400 },
+        );
+      }
+
+      // Fetch scored signals, clusters, and trends from the Intelligence Hub
+      const [signalFeed, clusterResponse, trendResponse] = await Promise.all([
+        fetchMonthlySignals(monthYear),
+        fetchMonthlyClusters(monthYear).catch(() => ({ success: false, clusters: [], total: 0, month_year: monthYear })),
+        fetchMonthlyTrends(monthYear).catch(() => ({ success: false, trends: [], total: 0, month_year: monthYear })),
+      ]);
+
+      if (!signalFeed.signals || signalFeed.signals.length === 0) {
+        return NextResponse.json(
+          { error: `No scored signals found for ${monthYear}. Ensure signals have been captured and scored in the Intelligence Hub.` },
+          { status: 404 },
+        );
+      }
+
+      // Find the cover story cluster or top trend
+      const coverCluster = findCoverStoryCluster(clusterResponse.clusters || []);
+      const topTrend = findTopTrend(trendResponse.trends || []);
+
+      // Build signal context for generation functions
+      // Prefer trend data over cluster data when available (richer context)
+      signalContext = {
+        signals: signalFeed.signals.map((s) => ({
+          title: s.title,
+          summary: s.summary,
+          why_it_matters: s.why_it_matters || '',
+          category: s.category,
+          composite_score: s.composite_score ?? 0,
+          source: s.source,
+          source_url: s.source_url || '',
+          company: s.company || null,
+          practical_implication: s.practical_implication || null,
+        })),
+        cluster: topTrend
+          ? {
+              title: topTrend.title,
+              theme: topTrend.description,
+              narrative_summary: [
+                topTrend.strategic_summary,
+                topTrend.implication_for_operators,
+              ].filter(Boolean).join(' '),
+            }
+          : coverCluster
+            ? {
+                title: coverCluster.title,
+                theme: coverCluster.theme,
+                narrative_summary: coverCluster.narrative_summary || '',
+              }
+            : undefined,
+        trends: (trendResponse.trends || []).map((t) => ({
+          title: t.title,
+          description: t.description,
+          strategic_summary: t.strategic_summary || '',
+          implication_for_operators: t.implication_for_operators || '',
+          region_scope: t.region_scope,
+          sector_scope: t.sector_scope,
+          confidence_score: t.confidence_score ?? 0,
+        })),
+      };
+
+      // Track source IDs for provenance
+      sourceSignalIds = signalFeed.signals.map((s) => s.id);
+      sourceClusterIds = (clusterResponse.clusters || []).map((c) => c.id);
+      sourceTrendIds = (trendResponse.trends || []).map((t) => t.id);
+
+      // Use source URLs as fallback sources array (for any functions that need it)
+      sources = signalFeed.signals
+        .filter((s): s is typeof s & { source_url: string } => !!s.source_url)
+        .map((s) => s.source_url);
+    } else {
+      // Original sources mode
+      const { sources: rawSources } = body as { sources: string[] };
+      if (!rawSources || rawSources.length === 0) {
+        return NextResponse.json({ error: 'At least one source is required' }, { status: 400 });
+      }
+      sources = rawSources;
     }
 
     // Step 1: Generate cover story first (everything else depends on it)
-    const coverStory = await generateCoverStory(sources, instructions);
+    const coverStory = await generateCoverStory(sources, instructions, signalContext);
 
     // Step 2: Generate implications, enterprise, industry watch, and tools in parallel
     const [implications, enterprise, industryWatch, tools] = await Promise.all([
-      generateImplications(coverStory, instructions),
-      generateEnterprise(coverStory, instructions),
-      generateIndustryWatch(sources, coverStory, instructions),
-      generateTools(sources, instructions),
+      generateImplications(coverStory, instructions, signalContext),
+      generateEnterprise(coverStory, instructions, signalContext),
+      generateIndustryWatch(sources, coverStory, instructions, signalContext),
+      generateTools(sources, instructions, signalContext),
     ]);
 
-    // Step 3: Generate playbooks, strategic signals, briefing prompts, executive briefing, editorial, why this matters, regional signals, and global landscape in parallel
+    // Step 3: Generate remaining sections in parallel
     const [playbooks, strategicSignals, briefingPrompts, executiveBriefing, aiNativeOrg, editorial, whyThisMatters, regionalSignals, globalLandscape] = await Promise.all([
-      generatePlaybooks(coverStory, instructions),
-      generateStrategicSignals(coverStory, implications, instructions),
-      generateBriefingPrompts(coverStory, implications, instructions),
-      generateExecutiveBriefing(coverStory, implications, instructions),
-      generateAiNativeOrg(coverStory, implications, issue.edition, instructions),
-      generateEditorial(coverStory, implications, monthName(issue.month), issue.edition, instructions),
-      generateWhyThisMatters(coverStory, implications, instructions),
-      generateRegionalSignals(coverStory, implications.map(i => i.title).join(', '), instructions),
-      generateGlobalLandscape(coverStory, instructions),
+      generatePlaybooks(coverStory, instructions, signalContext),
+      generateStrategicSignals(coverStory, implications, instructions, signalContext),
+      generateBriefingPrompts(coverStory, implications, instructions, signalContext),
+      generateExecutiveBriefing(coverStory, implications, instructions, signalContext),
+      generateAiNativeOrg(coverStory, implications, issue.edition, instructions, signalContext),
+      generateEditorial(coverStory, implications, monthName(issue.month), issue.edition, instructions, signalContext),
+      generateWhyThisMatters(coverStory, implications, instructions, signalContext),
+      generateRegionalSignals(coverStory, implications.map(i => i.title).join(', '), instructions, signalContext),
+      generateGlobalLandscape(coverStory, instructions, signalContext),
     ]);
 
-    // Post-generation: sanitise all dash characters
-    const updated = await updateIssue(issueId, {
+    // Post-generation: sanitise all dash characters and save
+    const updateData: Record<string, unknown> = {
       cover_story_json: sanitiseDashesDeep(coverStory),
       implications_json: sanitiseDashesDeep(implications),
       enterprise_json: sanitiseDashesDeep(enterprise),
@@ -83,9 +184,21 @@ export async function POST(request: Request, context: RouteContext) {
       why_this_matters: sanitiseDashes(whyThisMatters),
       global_landscape_json: sanitiseDashesDeep({ regions: globalLandscape }),
       regional_signals_json: sanitiseDashesDeep(regionalSignals),
-    });
+    };
 
-    return NextResponse.json({ issue: updated });
+    // Store provenance data when using signals mode
+    if (mode === 'signals') {
+      updateData.generation_mode = 'signals';
+      updateData.source_signal_ids = sourceSignalIds;
+      updateData.source_cluster_ids = sourceClusterIds;
+      updateData.source_trend_ids = sourceTrendIds;
+    } else {
+      updateData.generation_mode = 'sources';
+    }
+
+    const updated = await updateIssue(issueId, updateData);
+
+    return NextResponse.json({ issue: updated, mode });
   } catch (error) {
     console.error('AI generation failed:', error);
     return NextResponse.json(

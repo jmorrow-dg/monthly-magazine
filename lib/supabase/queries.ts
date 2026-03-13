@@ -1,6 +1,18 @@
 import { getSupabase } from './client';
 import type { Issue, IssueSummary, IssueStatus, IssuePage, IssueAsset, IssueReview } from '@/lib/types/issue';
 
+// ── Slug Utilities ──────────────────────────────────────────────────────────
+
+/**
+ * Generate a URL-friendly slug from issue metadata.
+ * Format: "2026-03-edition-04" or "2026-mar-edition-04"
+ */
+export function generateIssueSlug(year: number, month: number, edition: number): string {
+  const monthStr = String(month).padStart(2, '0');
+  const editionStr = String(edition).padStart(2, '0');
+  return `${year}-${monthStr}-edition-${editionStr}`;
+}
+
 // ── Issues ──────────────────────────────────────────────────────────────────
 
 export type CreateIssueInput = {
@@ -15,6 +27,8 @@ export type CreateIssueInput = {
 
 export async function createIssue(data: CreateIssueInput): Promise<Issue> {
   const supabase = getSupabase();
+  const slug = generateIssueSlug(data.year, data.month, data.edition);
+
   const { data: issue, error } = await supabase
     .from('issues')
     .insert({
@@ -22,6 +36,7 @@ export async function createIssue(data: CreateIssueInput): Promise<Issue> {
       month: data.month,
       year: data.year,
       edition: data.edition,
+      slug,
       cover_headline: data.cover_headline || 'AI Intelligence Report',
       cover_subtitle: data.cover_subtitle || null,
       cover_edition_label: data.cover_edition_label || null,
@@ -52,7 +67,7 @@ export async function listIssues(status?: IssueStatus): Promise<IssueSummary[]> 
   const supabase = getSupabase();
   let query = supabase
     .from('issues')
-    .select('id, title, month, year, edition, status, cover_headline, cover_subtitle, cover_edition_label, published_at, updated_at')
+    .select('id, slug, title, month, year, edition, status, is_latest, cover_headline, cover_subtitle, cover_edition_label, published_at, updated_at')
     .order('year', { ascending: false })
     .order('month', { ascending: false });
 
@@ -94,6 +109,19 @@ export async function deleteIssue(id: string): Promise<void> {
 
 export async function getLatestPublishedIssue(): Promise<Issue | null> {
   const supabase = getSupabase();
+
+  // Try is_latest flag first (fast path)
+  const { data: flagged, error: flagError } = await supabase
+    .from('issues')
+    .select('*')
+    .eq('is_latest', true)
+    .eq('status', 'published')
+    .limit(1)
+    .single();
+
+  if (!flagError && flagged) return flagged as Issue;
+
+  // Fallback: order by published_at
   const { data, error } = await supabase
     .from('issues')
     .select('*')
@@ -107,6 +135,51 @@ export async function getLatestPublishedIssue(): Promise<Issue | null> {
     throw new Error(`Failed to fetch latest issue: ${error.message}`);
   }
   return data as Issue;
+}
+
+/**
+ * Fetch an issue by slug.
+ */
+export async function getIssueBySlug(slug: string): Promise<Issue | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('issues')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw new Error(`Failed to fetch issue by slug: ${error.message}`);
+  }
+  return data as Issue;
+}
+
+/**
+ * Set an issue as the latest, clearing the flag on all other issues.
+ */
+export async function setLatestIssue(issueId: string): Promise<void> {
+  const supabase = getSupabase();
+
+  // Clear existing latest flag
+  const { error: clearError } = await supabase
+    .from('issues')
+    .update({ is_latest: false })
+    .eq('is_latest', true);
+
+  if (clearError) {
+    console.error('Failed to clear is_latest flags:', clearError);
+  }
+
+  // Set new latest
+  const { error: setError } = await supabase
+    .from('issues')
+    .update({ is_latest: true })
+    .eq('id', issueId);
+
+  if (setError) {
+    throw new Error(`Failed to set latest issue: ${setError.message}`);
+  }
 }
 
 // ── Issue Pages ─────────────────────────────────────────────────────────────

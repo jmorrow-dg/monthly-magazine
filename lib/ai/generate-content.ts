@@ -13,6 +13,7 @@ import type {
   RegionalSignal,
 } from '@/lib/types/issue';
 import type { GlobalLandscapeRegion } from '@/lib/templates/page-visual-global-landscape';
+import type { SignalContext } from '@/lib/intelligence/types';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -41,6 +42,76 @@ Key constraints:
 
 Always return valid JSON matching the requested schema exactly.`;
 
+/**
+ * Format signal context into a prompt-friendly block.
+ * When signals are available, they replace raw source URLs with richer,
+ * pre-analysed intelligence data.
+ */
+function formatSignalBlock(ctx: SignalContext): string {
+  const lines: string[] = [];
+
+  if (ctx.cluster) {
+    lines.push(`CLUSTER THEME: ${ctx.cluster.title}`);
+    lines.push(`Theme: ${ctx.cluster.theme}`);
+    if (ctx.cluster.narrative_summary) {
+      lines.push(`Narrative: ${ctx.cluster.narrative_summary}`);
+    }
+    lines.push('');
+  }
+
+  // Include trend summaries when available
+  if (ctx.trends && ctx.trends.length > 0) {
+    lines.push(`STRATEGIC TRENDS (${ctx.trends.length} identified):`);
+    ctx.trends.forEach((t, i) => {
+      lines.push(`[Trend ${i + 1}] ${t.title} (Confidence: ${t.confidence_score.toFixed(1)})`);
+      lines.push(`  Description: ${t.description}`);
+      if (t.strategic_summary) {
+        lines.push(`  Strategic summary: ${t.strategic_summary}`);
+      }
+      if (t.implication_for_operators) {
+        lines.push(`  For operators: ${t.implication_for_operators}`);
+      }
+      if (t.region_scope.length > 0) {
+        lines.push(`  Regions: ${t.region_scope.join(', ')}`);
+      }
+      if (t.sector_scope.length > 0) {
+        lines.push(`  Sectors: ${t.sector_scope.join(', ')}`);
+      }
+      lines.push('');
+    });
+  }
+
+  lines.push(`SCORED INTELLIGENCE SIGNALS (${ctx.signals.length} signals):`);
+  ctx.signals.forEach((s, i) => {
+    lines.push(`[Signal ${i + 1}] ${s.title} (Score: ${s.composite_score.toFixed(1)}, Category: ${s.category})`);
+    lines.push(`  Summary: ${s.summary}`);
+    lines.push(`  Why it matters: ${s.why_it_matters}`);
+    if (s.practical_implication) {
+      lines.push(`  Practical implication: ${s.practical_implication}`);
+    }
+    if (s.company) {
+      lines.push(`  Company: ${s.company}`);
+    }
+    lines.push(`  Source: ${s.source} (${s.source_url})`);
+    lines.push('');
+  });
+
+  return lines.join('\n');
+}
+
+/**
+ * Format a subset of signals filtered by category.
+ */
+function filterSignalsByCategory(ctx: SignalContext, categories: string[]): SignalContext {
+  const lowerCategories = categories.map((c) => c.toLowerCase());
+  return {
+    ...ctx,
+    signals: ctx.signals.filter((s) =>
+      lowerCategories.some((cat) => s.category.toLowerCase().includes(cat)),
+    ),
+  };
+}
+
 async function generate<T>(prompt: string, maxTokens = 4096): Promise<T> {
   const response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -64,11 +135,18 @@ async function generate<T>(prompt: string, maxTokens = 4096): Promise<T> {
 export async function generateCoverStory(
   sources: string[],
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<CoverStory> {
+  const sourceBlock = signalContext
+    ? `The following pre-analysed intelligence signals have been scored and clustered by our Intelligence Hub. Use these as your primary source material. Each signal includes a composite score (higher = more significant), category, summary, and strategic analysis.
+
+${formatSignalBlock(signalContext)}`
+    : `Source material:
+${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`;
+
   const prompt = `Based on the following source material, write a compelling cover story for a premium AI intelligence report aimed at operators, founders, and executives globally. The story should synthesise the most significant AI developments into a cohesive narrative with strategic business implications. Draw on examples from companies, labs, and developments across multiple regions.
 
-Source material:
-${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}
+${sourceBlock}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -96,7 +174,12 @@ Return ONLY the JSON object, no other text.`;
 export async function generateImplications(
   coverStory: CoverStory,
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<ImplicationItem[]> {
+  const signalEnrichment = signalContext
+    ? `\n\nSupporting intelligence signals:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Based on this cover story, identify 4 strategic implications for operators and executives globally:
 
 Cover Story: ${coverStory.headline}
@@ -104,6 +187,7 @@ ${coverStory.subheadline}
 
 Key themes from the story:
 ${coverStory.introduction.slice(0, 500)}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -125,7 +209,17 @@ Return ONLY the JSON array.`;
 export async function generateEnterprise(
   coverStory: CoverStory,
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<EnterpriseItem[]> {
+  const enterpriseSignals = signalContext
+    ? filterSignalsByCategory(signalContext, ['enterprise', 'adoption', 'infrastructure'])
+    : undefined;
+  const signalEnrichment = enterpriseSignals && enterpriseSignals.signals.length > 0
+    ? `\n\nEnterprise intelligence signals:\n${formatSignalBlock(enterpriseSignals)}`
+    : signalContext
+      ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
+      : '';
+
   const prompt = `Based on this cover story, identify 4 enterprise AI adoption signals:
 
 Cover Story: ${coverStory.headline}
@@ -133,6 +227,7 @@ ${coverStory.subheadline}
 
 Key themes:
 ${coverStory.introduction.slice(0, 500)}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -155,11 +250,15 @@ export async function generateIndustryWatch(
   sources: string[],
   coverStory: CoverStory,
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<IndustryWatchItem[]> {
+  const sourceBlock = signalContext
+    ? `Intelligence signals:\n${formatSignalBlock(signalContext)}`
+    : `Source material:\n${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`;
+
   const prompt = `Based on the source material and cover story context, identify 4-6 industry-specific AI trends worth watching for operators and executives globally. Each should focus on a different industry sector. Include developments from companies and markets across multiple regions.
 
-Source material:
-${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}
+${sourceBlock}
 
 Cover Story Context: ${coverStory.headline}
 ${coverStory.subheadline}
@@ -182,11 +281,15 @@ Return ONLY the JSON array.`;
 export async function generateTools(
   sources: string[],
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<ToolItem[]> {
+  const sourceBlock = signalContext
+    ? `Intelligence signals (identify tools mentioned or implied by these developments):\n${formatSignalBlock(signalContext)}`
+    : `Source material:\n${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`;
+
   const prompt = `Based on the source material, recommend 6 AI tools worth watching for business operators:
 
-Source material:
-${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}
+${sourceBlock}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -207,7 +310,12 @@ Return ONLY the JSON array.`;
 export async function generatePlaybooks(
   coverStory: CoverStory,
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<PlaybookItem[]> {
+  const signalEnrichment = signalContext
+    ? `\n\nIntelligence signals for grounding playbooks:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Based on this cover story, create 4 practical operator playbooks that business leaders can implement regardless of region or market:
 
 Cover Story: ${coverStory.headline}
@@ -218,6 +326,7 @@ ${coverStory.introduction.slice(0, 500)}
 
 Strategic implications:
 ${coverStory.strategic_implications.slice(0, 500)}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -238,7 +347,12 @@ export async function generateStrategicSignals(
   coverStory: CoverStory,
   implications: ImplicationItem[],
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<StrategicSignalItem[]> {
+  const signalEnrichment = signalContext
+    ? `\n\nScored intelligence signals:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Based on the cover story and strategic implications, identify 4-6 strategic signals that forward-thinking operators and executives should be monitoring globally. These are early indicators of shifts that will shape the business landscape. Draw signals from AI labs, enterprise technology, regulatory developments, and adoption patterns across multiple regions.
 
 Cover Story: ${coverStory.headline}
@@ -246,6 +360,7 @@ ${coverStory.subheadline}
 
 Strategic Implications:
 ${implications.map((i) => `- ${i.title}: ${i.description}`).join('\n')}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -265,7 +380,12 @@ export async function generateWhyThisMatters(
   coverStory: CoverStory,
   implications: ImplicationItem[],
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<string> {
+  const signalEnrichment = signalContext
+    ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Write a "Why This Matters" section (120-180 words) for the David & Goliath AI Intelligence Report.
 
 Cover Story: ${coverStory.headline}
@@ -273,6 +393,7 @@ ${coverStory.subheadline}
 
 Key implications:
 ${implications.map((i) => `- ${i.title}: ${i.description}`).join('\n')}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -304,7 +425,12 @@ export async function generateBriefingPrompts(
   coverStory: CoverStory,
   implications: ImplicationItem[],
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<BriefingPromptItem[]> {
+  const signalEnrichment = signalContext
+    ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Based on the cover story and strategic implications, generate 6 "Operator Briefing Prompts" for the David & Goliath AI Intelligence Report. These are strategic questions that leadership teams should be discussing in their next meeting. Each prompt should provoke meaningful discussion about AI strategy, adoption, risk, or opportunity.
 
 Cover Story: ${coverStory.headline}
@@ -312,6 +438,7 @@ ${coverStory.subheadline}
 
 Strategic Implications:
 ${implications.map((i) => `- ${i.title}: ${i.description}`).join('\n')}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -337,7 +464,12 @@ export async function generateExecutiveBriefing(
   coverStory: CoverStory,
   implications: ImplicationItem[],
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<ExecutiveTakeawayItem[]> {
+  const signalEnrichment = signalContext
+    ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Based on the cover story and strategic implications, generate 5 executive takeaways for the "Executive Briefing: Key Takeaways" section of the David & Goliath AI Intelligence Report. This section provides senior leaders with a concise summary of the most important strategic insights from the report.
 
 Cover Story: ${coverStory.headline}
@@ -348,6 +480,7 @@ ${coverStory.introduction.slice(0, 400)}
 
 Strategic Implications:
 ${implications.map((i) => `- ${i.title}: ${i.description}`).join('\n')}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -377,6 +510,7 @@ export async function generateAiNativeOrg(
   implications: ImplicationItem[],
   edition: number,
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<AiNativeOrgData> {
   // Rotate through the five layers each edition
   const layers = ['strategy', 'workflow', 'agent', 'model', 'infrastructure'] as const;
@@ -390,6 +524,10 @@ export async function generateAiNativeOrg(
     infrastructure: 'Infrastructure Layer: compute, data, and orchestration platforms',
   };
 
+  const signalEnrichment = signalContext
+    ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Based on the cover story and strategic implications, generate content for "The AI Native Organisation" framework page. This page features a recurring five-layer model of the AI native organisation (Strategy, Workflow, Agent, Model, Infrastructure) with dynamic monthly content.
 
 Cover Story: ${coverStory.headline}
@@ -397,6 +535,7 @@ ${coverStory.subheadline}
 
 Strategic Implications:
 ${implications.map((i) => `- ${i.title}: ${i.description}`).join('\n')}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -434,7 +573,12 @@ export async function generateEditorial(
   month: string,
   edition: number,
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<string> {
+  const signalEnrichment = signalContext
+    ? `\n\nTop intelligence signals this month:\n${signalContext.signals.slice(0, 5).map((s) => `- ${s.title} (Score: ${s.composite_score.toFixed(1)})`).join('\n')}`
+    : '';
+
   const prompt = `Write an editorial note for Edition ${String(edition).padStart(2, '0')} (${month}) of the David & Goliath AI Intelligence Report.
 
 Cover story theme: ${coverStory.headline}
@@ -442,6 +586,7 @@ ${coverStory.subheadline}
 
 Key implications:
 ${implications.map((i) => `- ${i.title}`).join('\n')}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -475,13 +620,19 @@ export async function generateRegionalSignals(
   coverStory: CoverStory,
   context: string,
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<{ implications: RegionalSignal[]; enterprise: RegionalSignal[] }> {
+  const signalEnrichment = signalContext
+    ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Based on this cover story, generate two sets of regional signals showing how global AI developments manifest differently across key regions. Each set has exactly 3 signals (United States, Europe, Asia).
 
 Cover Story: ${coverStory.headline}
 ${coverStory.subheadline}
 
 Context: ${context}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
@@ -515,7 +666,12 @@ Return ONLY the JSON object.`;
 export async function generateGlobalLandscape(
   coverStory: CoverStory,
   instructions?: string,
+  signalContext?: SignalContext,
 ): Promise<GlobalLandscapeRegion[]> {
+  const signalEnrichment = signalContext
+    ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
+    : '';
+
   const prompt = `Based on this cover story, generate regional AI landscape data for four regions. Each region should have 3 signals highlighting the most significant AI developments in that region this month.
 
 Cover Story: ${coverStory.headline}
@@ -523,6 +679,7 @@ ${coverStory.subheadline}
 
 Key themes:
 ${coverStory.introduction.slice(0, 400)}
+${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 

@@ -125,13 +125,23 @@ export type RegionalSignalsData = {
 
 // -- Issue --
 
+// -- Derivative artifact types --
+
+export type LinkedInSnippet = {
+  hook: string;
+  body: string;
+  cta: string;
+};
+
 export type Issue = {
   id: string;
+  slug: string | null;
   title: string;
   month: number;
   year: number;
   edition: number;
   status: IssueStatus;
+  is_latest: boolean;
   cover_headline: string;
   cover_subtitle: string | null;
   cover_edition_label: string | null;
@@ -154,6 +164,17 @@ export type Issue = {
   regional_signals_json: RegionalSignalsData | null;
   html_snapshot: string | null;
   pdf_url: string | null;
+  // Provenance
+  source_signal_ids: string[] | null;
+  source_cluster_ids: string[] | null;
+  source_trend_ids: string[] | null;
+  generation_mode: 'sources' | 'signals' | null;
+  // Derivative artifacts
+  executive_summary: string | null;
+  beehiiv_summary: string | null;
+  welcome_email_snippet: string | null;
+  linkedin_snippets: LinkedInSnippet[] | null;
+  // Timestamps
   created_at: string;
   updated_at: string;
   published_at: string | null;
@@ -161,11 +182,13 @@ export type Issue = {
 
 export type IssueSummary = {
   id: string;
+  slug: string | null;
   title: string;
   month: number;
   year: number;
   edition: number;
   status: IssueStatus;
+  is_latest: boolean;
   cover_headline: string;
   cover_subtitle: string | null;
   cover_edition_label: string | null;
