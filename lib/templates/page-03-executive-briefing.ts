@@ -6,7 +6,7 @@ import type { ExecutiveBriefingPageData } from '@/lib/types/templates';
 export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string {
   const items = data.items.slice(0, 5);
 
-  // Split into two columns: 3 left, 2 right (or 2+3 if 5 items)
+  // Split into two columns: 3 left, 2 right
   const leftItems = items.slice(0, 3);
   const rightItems = items.slice(3, 5);
 
@@ -26,6 +26,21 @@ export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string
     </div>
   `;
 
+  // Cover story connector for the bottom-right space
+  const coverConnector = data.coverHeadline ? `
+    <div style="background: rgba(184,134,11,0.06); border: 0.4pt solid rgba(184,134,11,0.25); border-radius: 5pt; padding: 14pt 16pt; margin-top: 8pt;">
+      <div style="font-family: 'Inter', sans-serif; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1.2pt; margin-bottom: 6pt;">
+        This Edition's Cover Story
+      </div>
+      <div style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 9.5pt; color: ${COLORS.white}; line-height: 1.35; margin-bottom: 4pt;">
+        ${escapeHtml(data.coverHeadline)}
+      </div>
+      <div style="font-family: 'Inter', sans-serif; font-size: 7pt; color: ${COLORS.midGrey};">
+        See page 6 for full analysis
+      </div>
+    </div>
+  ` : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,7 +52,14 @@ export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string
     ${renderMagazineHeader(3)}
 
     <div style="margin-top: 52pt;">
-      ${renderIconLabel('executive-briefing', 'Executive Briefing')}
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0;">
+        <div>
+          ${renderIconLabel('executive-briefing', 'Executive Briefing')}
+        </div>
+        <div style="font-family: 'Inter', sans-serif; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt; padding-top: 2pt;">
+          60-Second Brief
+        </div>
+      </div>
 
       <h2 style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 18pt; color: ${COLORS.white}; line-height: 1.2; margin-bottom: 6pt;">
         Key Takeaways
@@ -53,6 +75,7 @@ export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string
         </div>
         <div style="flex: 1;">
           ${rightItems.map((item, idx) => renderTakeawayCard(item, idx + 3)).join('')}
+          ${coverConnector}
         </div>
       </div>
     </div>

@@ -53,7 +53,7 @@ export async function GET(request: Request, context: RouteContext) {
     const pages = [
       /* 1  */ renderCover({ headline: issue.cover_headline, subtitle: issue.cover_subtitle, editionLabel: label, coverImageUrl: issue.cover_image_url }),
       /* 2  */ renderEditorial({ note: issue.editorial_note || '', month, edition: issue.edition }),
-      /* 3  */ renderExecutiveBriefing({ items: issue.executive_briefing_json || [] }),
+      /* 3  */ renderExecutiveBriefing({ items: issue.executive_briefing_json || [], coverHeadline: issue.cover_headline }),
       /* 4  */ renderWhyThisMatters({ content: issue.why_this_matters || '' }),
       /* 5  */ renderSectionDividerPage({ title: 'Cover Story' }),
       /* 6  */ renderCoverStoryIntro({

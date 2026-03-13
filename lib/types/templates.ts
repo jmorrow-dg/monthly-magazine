@@ -63,6 +63,7 @@ export type BriefingPromptsPageData = {
 
 export type ExecutiveBriefingPageData = {
   items: ExecutiveTakeawayItem[];
+  coverHeadline?: string;
 };
 
 export type AiNativeOrgPageData = {
