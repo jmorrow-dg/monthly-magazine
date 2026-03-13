@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import IssueStatusBadge from '@/components/admin/IssueStatusBadge';
-import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import AdminDashboardSkeleton from '@/components/admin/AdminDashboardSkeleton';
 import { shortMonthName } from '@/lib/utils/format-date';
 import type { IssueSummary } from '@/lib/types/issue';
 
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12"><LoadingSpinner /></div>
+          <AdminDashboardSkeleton />
         ) : error ? (
           <div className="py-12 text-center text-[#C0392B] text-sm">{error}</div>
         ) : issues.length === 0 ? (

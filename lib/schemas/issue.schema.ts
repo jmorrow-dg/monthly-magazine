@@ -9,6 +9,15 @@ const developmentItemSchema = z.object({
   category: z.string().max(100),
 });
 
+const coverStorySchema = z.object({
+  headline: z.string().min(1).max(200),
+  subheadline: z.string().min(1).max(300),
+  introduction: z.string().min(1).max(3000),
+  analysis: z.string().min(1).max(4000),
+  strategic_implications: z.string().min(1).max(3000),
+  pull_quotes: z.array(z.string().max(200)).max(6),
+});
+
 const implicationItemSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(500),
@@ -21,6 +30,13 @@ const enterpriseItemSchema = z.object({
   description: z.string().min(1).max(500),
   adoption_stage: z.enum(['early', 'growing', 'mainstream']),
   industry: z.string().max(100),
+});
+
+const industryWatchItemSchema = z.object({
+  industry: z.string().min(1).max(100),
+  headline: z.string().min(1).max(200),
+  description: z.string().min(1).max(500),
+  trend_direction: z.enum(['accelerating', 'emerging', 'stabilising', 'declining']),
 });
 
 const toolItemSchema = z.object({
@@ -38,6 +54,12 @@ const playbookItemSchema = z.object({
   outcome: z.string().min(1).max(300),
 });
 
+const strategicSignalItemSchema = z.object({
+  signal: z.string().min(1).max(200),
+  context: z.string().min(1).max(300),
+  implication: z.string().min(1).max(300),
+});
+
 export const createIssueSchema = z.object({
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2024),
@@ -53,10 +75,14 @@ export const updateIssueSchema = z.object({
   cover_image_url: z.string().max(2000).nullable().optional(),
   editorial_note: z.string().max(5000).nullable().optional(),
   developments_json: z.array(developmentItemSchema).optional(),
+  cover_story_json: coverStorySchema.nullable().optional(),
   implications_json: z.array(implicationItemSchema).optional(),
   enterprise_json: z.array(enterpriseItemSchema).optional(),
+  industry_watch_json: z.array(industryWatchItemSchema).optional(),
   tools_json: z.array(toolItemSchema).optional(),
   playbooks_json: z.array(playbookItemSchema).optional(),
+  strategic_signals_json: z.array(strategicSignalItemSchema).optional(),
+  why_this_matters: z.string().max(5000).nullable().optional(),
   status: z.enum(['draft', 'review', 'approved', 'published', 'archived']).optional(),
 });
 

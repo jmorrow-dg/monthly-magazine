@@ -1,6 +1,7 @@
 import { COLORS } from './styles';
 import { dgLogoDataUri } from './assets';
 import { escapeHtml } from '@/lib/utils/escape-html';
+import { getIcon } from './icons';
 
 /**
  * Magazine header with DG logo and page number.
@@ -97,4 +98,153 @@ export function renderBadge(label: string, color?: string): string {
  */
 export function goldBullet(): string {
   return `<span style="display: inline-block; width: 3pt; height: 3pt; background: ${COLORS.gold}; margin-right: 7pt; flex-shrink: 0; margin-top: 5pt;"></span>`;
+}
+
+/**
+ * Two-column text layout using CSS columns.
+ * Splits text paragraphs across two balanced columns.
+ */
+export function renderColumnText(text: string): string {
+  const paragraphs = text.split(/\n\n+/).filter(Boolean);
+  const html = paragraphs
+    .map(p => `<p style="font-family: 'Inter', sans-serif; font-size: 8.5pt; color: ${COLORS.lightGrey}; line-height: 1.65; margin-bottom: 8pt;">${escapeHtml(p)}</p>`)
+    .join('');
+
+  return `
+    <div style="columns: 2; column-gap: 16pt; orphans: 3; widows: 3;">
+      ${html}
+    </div>
+  `;
+}
+
+/**
+ * Full-width pull quote spanning both columns.
+ * Gold left border, italic Playfair Display.
+ */
+export function renderPullQuote(quote: string): string {
+  return `
+    <div style="column-span: all; margin: 14pt 0; padding: 12pt 16pt; border-left: 3pt solid ${COLORS.gold}; background: rgba(184,134,11,0.04);">
+      <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 11pt; color: ${COLORS.offWhite}; line-height: 1.55; margin: 0;">
+        &ldquo;${escapeHtml(quote)}&rdquo;
+      </p>
+    </div>
+  `;
+}
+
+/**
+ * Operator Lens callout box.
+ */
+export function renderOperatorLens(audience: string, text: string): string {
+  return renderCard(`
+    <div style="display: flex; align-items: center; gap: 6pt; margin-bottom: 6pt;">
+      <span style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt;">Operator Lens</span>
+      <span style="font-family: 'Inter', sans-serif; font-size: 6.5pt; color: ${COLORS.midGrey};">&middot;</span>
+      <span style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 7pt; color: ${COLORS.white};">${escapeHtml(audience)}</span>
+    </div>
+    <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.55; margin: 0;">
+      ${escapeHtml(text)}
+    </p>
+  `, { bg: COLORS.card2, padding: '10pt 12pt' });
+}
+
+/**
+ * Industry Watch callout box.
+ */
+export function renderIndustryWatchBox(industry: string, text: string): string {
+  return renderCard(`
+    <div style="display: flex; align-items: center; gap: 6pt; margin-bottom: 6pt;">
+      <span style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: #3B82F6; text-transform: uppercase; letter-spacing: 1pt;">Industry Watch</span>
+      <span style="font-family: 'Inter', sans-serif; font-size: 6.5pt; color: ${COLORS.midGrey};">&middot;</span>
+      <span style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 7pt; color: ${COLORS.white};">${escapeHtml(industry)}</span>
+    </div>
+    <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.55; margin: 0;">
+      ${escapeHtml(text)}
+    </p>
+  `, { bg: COLORS.card2, padding: '10pt 12pt' });
+}
+
+/**
+ * Strategic Signal callout card.
+ */
+export function renderStrategicSignalBox(signal: string, context: string, implication: string): string {
+  return renderCard(`
+    <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt; margin-bottom: 6pt;">
+      Strategic Signal
+    </div>
+    <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 9.5pt; color: ${COLORS.white}; line-height: 1.3; margin-bottom: 6pt;">
+      ${escapeHtml(signal)}
+    </div>
+    <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.55; margin-bottom: 6pt;">
+      ${escapeHtml(context)}
+    </p>
+    <div style="padding-top: 6pt; border-top: 0.4pt solid ${COLORS.rule};">
+      <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.gold}; font-weight: 600; line-height: 1.5; margin: 0;">
+        ${escapeHtml(implication)}
+      </p>
+    </div>
+  `, { marginBottom: '7pt' });
+}
+
+/**
+ * Section divider treatment (gold label with subtle background).
+ */
+export function renderSectionDivider(label: string): string {
+  return `
+    <div style="margin-bottom: 14pt; padding-bottom: 10pt; border-bottom: 0.5pt solid ${COLORS.rule};">
+      <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 7pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 2pt;">
+        ${escapeHtml(label)}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Section label with inline icon.
+ * Replaces renderSectionLabel on pages that have section icons.
+ */
+export function renderIconLabel(iconKey: string, label: string): string {
+  const icon = getIcon(iconKey);
+  return `
+    <div style="display: flex; align-items: center; gap: 6pt; margin-bottom: 10pt;">
+      ${icon}
+      <span style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 7pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1.5pt;">
+        ${escapeHtml(label)}
+      </span>
+    </div>
+  `;
+}
+
+/**
+ * Figure caption block for diagrams and charts.
+ * Gold figure number, off-white title, optional grey explanation.
+ */
+export function renderFigureCaption(figureNumber: number, title: string, explanation?: string): string {
+  const num = String(figureNumber).padStart(2, '0');
+  return `
+    <div style="margin-bottom: 10pt;">
+      <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt; margin-bottom: 3pt;">
+        Figure ${num}
+      </div>
+      <div style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.offWhite}; line-height: 1.4;">
+        ${escapeHtml(title)}
+      </div>
+      ${explanation ? `<div style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.lightGrey}; line-height: 1.4; margin-top: 2pt;">${escapeHtml(explanation)}</div>` : ''}
+    </div>
+  `;
+}
+
+/**
+ * Strategic pull quote: center-aligned, large editorial type.
+ * Used sparingly (max 3 per issue) to highlight key strategic insights.
+ */
+export function renderStrategicPullQuote(quote: string): string {
+  return `
+    <div style="margin: 16pt auto; max-width: 360pt; text-align: center; padding: 14pt 0;">
+      <div style="width: 20pt; height: 1.5pt; background: ${COLORS.gold}; margin: 0 auto 12pt;"></div>
+      <p style="font-family: 'Playfair Display', serif; font-style: italic; font-weight: 500; font-size: 12pt; color: ${COLORS.offWhite}; line-height: 1.45; margin: 0;">
+        &ldquo;${escapeHtml(quote)}&rdquo;
+      </p>
+      <div style="width: 20pt; height: 1.5pt; background: ${COLORS.gold}; margin: 12pt auto 0;"></div>
+    </div>
+  `;
 }

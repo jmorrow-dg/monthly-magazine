@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import ArchiveSkeleton from '@/components/archive/ArchiveSkeleton';
+import CoverPreview from '@/components/archive/CoverPreview';
 import EmptyState from '@/components/shared/EmptyState';
 import { monthName } from '@/lib/utils/format-date';
 import type { IssueSummary } from '@/lib/types/issue';
@@ -43,7 +44,7 @@ export default function ArchiveClient() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>
+          <ArchiveSkeleton />
         ) : error ? (
           <div className="text-center py-20">
             <p className="text-[#C0392B] text-sm mb-4">{error}</p>
@@ -59,18 +60,23 @@ export default function ArchiveClient() {
                 href={`/issues/${issue.id}/viewer`}
                 className="group bg-[#222222] border border-[#333333] rounded-lg overflow-hidden hover:border-[#B8860B]/50 transition-all hover:shadow-lg hover:shadow-[#B8860B]/5"
               >
-                {/* Cover preview placeholder */}
-                <div className="h-48 bg-gradient-to-br from-[#1C1C1C] to-[#0a0a0a] flex items-center justify-center relative">
-                  <div className="text-center">
-                    <div className="font-[family-name:var(--font-playfair)] text-lg font-bold text-white/80 group-hover:text-white transition-colors">
-                      Edition {String(issue.edition).padStart(2, '0')}
+                {/* Cover preview */}
+                <CoverPreview
+                  issueId={issue.id}
+                  fallback={
+                    <div className="h-full flex items-center justify-center relative">
+                      <div className="text-center">
+                        <div className="font-[family-name:var(--font-playfair)] text-lg font-bold text-white/80 group-hover:text-white transition-colors">
+                          Edition {String(issue.edition).padStart(2, '0')}
+                        </div>
+                        <div className="text-[10px] text-[#B8860B] uppercase tracking-widest mt-1">
+                          {monthName(issue.month)} {issue.year}
+                        </div>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#B8860B] opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <div className="text-[10px] text-[#B8860B] uppercase tracking-widest mt-1">
-                      {monthName(issue.month)} {issue.year}
-                    </div>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#B8860B] opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+                  }
+                />
 
                 <div className="p-4">
                   <h3 className="text-white font-semibold text-sm mb-1 group-hover:text-[#B8860B] transition-colors">

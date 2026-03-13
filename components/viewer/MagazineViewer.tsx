@@ -4,17 +4,23 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import PageRenderer from './PageRenderer';
 import SpreadNavigation from './SpreadNavigation';
-import { SPREAD_LAYOUT, TOTAL_SPREADS } from '@/lib/types/magazine';
+import TableOfContents from './TableOfContents';
+import ShareActions from './ShareActions';
+import { SPREAD_LAYOUT, TOTAL_SPREADS, TOTAL_PAGES } from '@/lib/types/magazine';
 
 type MagazineViewerProps = {
   pageHtmls: (string | null)[];
+  issueId?: string;
+  headline?: string;
+  subtitle?: string | null;
 };
 
-export default function MagazineViewer({ pageHtmls }: MagazineViewerProps) {
+export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle }: MagazineViewerProps) {
   const [currentSpread, setCurrentSpread] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
+  const [tocOpen, setTocOpen] = useState(false);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -40,11 +46,10 @@ export default function MagazineViewer({ pageHtmls }: MagazineViewerProps) {
 
     transitionTimer.current = setTimeout(() => {
       setCurrentSpread(nextSpread);
-      // Brief pause then fade in
       requestAnimationFrame(() => {
         setIsTransitioning(false);
       });
-    }, 200);
+    }, 350);
   }, [isTransitioning]);
 
   const goNext = useCallback(() => {
@@ -56,6 +61,11 @@ export default function MagazineViewer({ pageHtmls }: MagazineViewerProps) {
     const prev = Math.max(currentSpread - 1, 0);
     if (prev !== currentSpread) navigateTo(prev, 'prev');
   }, [currentSpread, navigateTo]);
+
+  const jumpToSpread = useCallback((idx: number) => {
+    if (idx === currentSpread || isTransitioning) return;
+    navigateTo(idx, idx > currentSpread ? 'next' : 'prev');
+  }, [currentSpread, isTransitioning, navigateTo]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -75,9 +85,9 @@ export default function MagazineViewer({ pageHtmls }: MagazineViewerProps) {
   // Build page label
   let pageLabel: string;
   if (spread.leftPageNumber && spread.rightPageNumber) {
-    pageLabel = `Pages ${spread.leftPageNumber}-${spread.rightPageNumber} of 8`;
+    pageLabel = `Pages ${spread.leftPageNumber}-${spread.rightPageNumber} of ${TOTAL_PAGES}`;
   } else if (spread.leftPageNumber) {
-    pageLabel = `Page ${spread.leftPageNumber} of 8`;
+    pageLabel = `Page ${spread.leftPageNumber} of ${TOTAL_PAGES}`;
   } else {
     pageLabel = '';
   }
@@ -86,8 +96,28 @@ export default function MagazineViewer({ pageHtmls }: MagazineViewerProps) {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
-        <div className="sticky top-0 z-10 bg-[#0a0a0a]/90 backdrop-blur-sm border-b border-[#222222] px-4 py-3">
+        <TableOfContents
+          pageHtmls={pageHtmls}
+          currentSpread={currentSpread}
+          onNavigate={jumpToSpread}
+          isOpen={tocOpen}
+          onClose={() => setTocOpen(false)}
+          isMobile={true}
+        />
+        <div className="sticky top-0 z-10 bg-[#0a0a0a]/90 backdrop-blur-sm border-b border-[#222222] px-4 py-3 flex items-center justify-between">
           <Link href="/issues" className="text-[#B8860B] text-xs hover:underline">&larr; All Issues</Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setTocOpen(true)}
+              className="text-[#888888] hover:text-white text-xs transition-colors"
+              aria-label="Table of contents"
+            >
+              Contents
+            </button>
+            {issueId && headline && (
+              <ShareActions issueId={issueId} headline={headline} subtitle={subtitle} />
+            )}
+          </div>
         </div>
         <div className="max-w-lg mx-auto py-6 px-4 space-y-6">
           {pageHtmls.map((html, i) =>
@@ -105,20 +135,46 @@ export default function MagazineViewer({ pageHtmls }: MagazineViewerProps) {
   // Desktop: spread view with transitions
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+      <TableOfContents
+        pageHtmls={pageHtmls}
+        currentSpread={currentSpread}
+        onNavigate={jumpToSpread}
+        isOpen={tocOpen}
+        onClose={() => setTocOpen(false)}
+        isMobile={false}
+      />
       {/* Top bar */}
-      <div className="px-6 pt-4">
+      <div className="px-6 pt-4 flex items-center justify-between">
         <Link href="/issues" className="text-[#B8860B] text-xs hover:underline">&larr; All Issues</Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setTocOpen(true)}
+            className="text-[#888888] hover:text-white text-xs transition-colors flex items-center gap-1.5"
+            aria-label="Table of contents"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-70">
+              <rect x="1" y="2" width="14" height="1.5" rx="0.5" fill="currentColor"/>
+              <rect x="1" y="7" width="14" height="1.5" rx="0.5" fill="currentColor"/>
+              <rect x="1" y="12" width="14" height="1.5" rx="0.5" fill="currentColor"/>
+            </svg>
+            Contents
+          </button>
+          {issueId && headline && (
+            <ShareActions issueId={issueId} headline={headline} subtitle={subtitle} />
+          )}
+        </div>
       </div>
 
       {/* Viewer area */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div
-          className={`flex ${isSinglePage ? 'justify-center' : 'gap-1'} transition-all duration-300 ease-out ${
-            isTransitioning
-              ? `opacity-0 scale-[0.98] ${direction === 'next' ? 'translate-x-4' : '-translate-x-4'}`
-              : 'opacity-100 scale-100 translate-x-0'
-          }`}
-          style={{ maxHeight: '80vh' }}
+          className={`flex ${isSinglePage ? 'justify-center' : 'gap-1'}`}
+          style={{
+            maxHeight: '80vh',
+            animation: isTransitioning
+              ? `spread-exit-${direction} 350ms ease-out forwards`
+              : `spread-enter-${direction} 350ms ease-out forwards`,
+          }}
         >
           {/* Left page */}
           {leftHtml && (

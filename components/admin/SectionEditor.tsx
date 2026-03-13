@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import ContentIndicator from '@/components/admin/ContentIndicator';
+import { CONTENT_LIMITS } from '@/lib/constants/content-limits';
 
 type ArrayItem = Record<string, unknown>;
 
@@ -90,12 +92,20 @@ export default function SectionEditor({ sectionKey, label, items, fields, onChan
                         {field.label}
                       </label>
                       {field.type === 'textarea' ? (
-                        <textarea
-                          value={(item[field.key] as string) || ''}
-                          onChange={(e) => updateItem(index, field.key, e.target.value)}
-                          rows={3}
-                          className="w-full px-3 py-2 bg-[#222222] border border-[#333333] rounded text-white text-sm focus:outline-none focus:border-[#B8860B] resize-y"
-                        />
+                        <>
+                          <textarea
+                            value={(item[field.key] as string) || ''}
+                            onChange={(e) => updateItem(index, field.key, e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 bg-[#222222] border border-[#333333] rounded text-white text-sm focus:outline-none focus:border-[#B8860B] resize-y"
+                          />
+                          {CONTENT_LIMITS[sectionKey]?.[field.key] && (
+                            <ContentIndicator
+                              value={(item[field.key] as string) || ''}
+                              limit={CONTENT_LIMITS[sectionKey][field.key]}
+                            />
+                          )}
+                        </>
                       ) : field.type === 'select' ? (
                         <select
                           value={(item[field.key] as string) || ''}
@@ -113,12 +123,20 @@ export default function SectionEditor({ sectionKey, label, items, fields, onChan
                           placeholder={field.placeholder || 'Add entry...'}
                         />
                       ) : (
-                        <input
-                          type="text"
-                          value={(item[field.key] as string) || ''}
-                          onChange={(e) => updateItem(index, field.key, e.target.value)}
-                          className="w-full px-3 py-2 bg-[#222222] border border-[#333333] rounded text-white text-sm focus:outline-none focus:border-[#B8860B]"
-                        />
+                        <>
+                          <input
+                            type="text"
+                            value={(item[field.key] as string) || ''}
+                            onChange={(e) => updateItem(index, field.key, e.target.value)}
+                            className="w-full px-3 py-2 bg-[#222222] border border-[#333333] rounded text-white text-sm focus:outline-none focus:border-[#B8860B]"
+                          />
+                          {CONTENT_LIMITS[sectionKey]?.[field.key] && (
+                            <ContentIndicator
+                              value={(item[field.key] as string) || ''}
+                              limit={CONTENT_LIMITS[sectionKey][field.key]}
+                            />
+                          )}
+                        </>
                       )}
                     </div>
                   ))}

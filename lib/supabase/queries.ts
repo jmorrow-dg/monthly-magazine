@@ -227,9 +227,13 @@ export async function getIssueReviews(issueId: string): Promise<IssueReview[]> {
 
 // ── Storage ─────────────────────────────────────────────────────────────────
 
-export async function uploadPdf(issueId: string, pdfBuffer: Uint8Array): Promise<string> {
+export async function uploadPdf(
+  issueId: string,
+  pdfBuffer: Uint8Array,
+  customFileName?: string,
+): Promise<string> {
   const supabase = getSupabase();
-  const fileName = `issue-${issueId}.pdf`;
+  const fileName = customFileName || `issue-${issueId}.pdf`;
 
   const { error } = await supabase.storage
     .from('magazine-pdfs')

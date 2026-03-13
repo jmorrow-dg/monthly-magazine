@@ -1,5 +1,5 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderSectionLabel } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderIconLabel } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { EditorialPageData } from '@/lib/types/templates';
 
@@ -17,7 +17,7 @@ export function renderEditorial(data: EditorialPageData): string {
     ${renderMagazineHeader(2)}
 
     <div style="margin-top: 52pt;">
-      ${renderSectionLabel('Editorial Note')}
+      ${renderIconLabel('editorial', 'Editorial Note')}
 
       <h2 style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 20pt; color: ${COLORS.white}; line-height: 1.2; margin-bottom: 6pt;">
         From the Editor
@@ -28,21 +28,14 @@ export function renderEditorial(data: EditorialPageData): string {
         ${escapeHtml(data.month)} | Edition ${String(data.edition).padStart(2, '0')}
       </div>
 
-      <div style="border-left: 2pt solid ${COLORS.gold}; padding-left: 16pt; margin-bottom: 20pt;">
-        ${paragraphs.map((p, i) => `
-          <p style="font-family: 'Inter', sans-serif; font-size: 9pt; color: ${i === 0 ? COLORS.offWhite : COLORS.lightGrey}; line-height: 1.7; margin-bottom: 12pt; ${i === 0 ? 'font-weight: 500;' : ''}">
-            ${escapeHtml(p)}
-          </p>
-        `).join('')}
-      </div>
-
-      <!-- Signature block -->
-      <div style="margin-top: 24pt; padding-top: 14pt; border-top: 0.4pt solid ${COLORS.rule};">
-        <div style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 12pt; color: ${COLORS.white}; margin-bottom: 4pt;">
-          Josh Morrow
-        </div>
-        <div style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.midGrey};">
-          Founder &amp; Managing Partner, David &amp; Goliath
+      <div style="display: flex; align-items: flex-start; gap: 16pt; margin-bottom: 20pt;">
+        <img src="/images/josh-morrow.jpg" alt="" style="width: 54pt; height: 54pt; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-top: 2pt;" />
+        <div style="border-left: 2pt solid ${COLORS.gold}; padding-left: 16pt; flex: 1;">
+          ${paragraphs.map((p, i) => `
+            <p style="font-family: 'Inter', sans-serif; font-size: 9pt; color: ${i === 0 ? COLORS.offWhite : COLORS.lightGrey}; line-height: 1.7; margin-bottom: 12pt; ${i === 0 ? 'font-weight: 500;' : ''}">
+              ${escapeHtml(p)}
+            </p>
+          `).join('')}
         </div>
       </div>
     </div>

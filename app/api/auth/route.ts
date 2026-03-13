@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyPassword, setSessionCookie } from '@/lib/auth';
+import { verifyPassword, createSessionToken } from '@/lib/auth';
 
 const attempts = new Map<string, { count: number; firstAttempt: number }>();
 const MAX_ATTEMPTS = 5;
@@ -54,10 +54,19 @@ export async function POST(request: Request) {
     }
 
     attempts.delete(ip);
-    await setSessionCookie();
+    const token = createSessionToken();
+    const response = NextResponse.json({ success: true });
+    response.cookies.set('dg-magazine-session', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
 
-    return NextResponse.json({ success: true });
-  } catch {
+    return response;
+  } catch (error) {
+    console.error('Auth error:', error);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

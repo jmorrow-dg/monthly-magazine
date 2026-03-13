@@ -1,4 +1,4 @@
-import type { DevelopmentItem, ImplicationItem, EnterpriseItem, ToolItem, PlaybookItem } from './issue';
+import type { ImplicationItem, EnterpriseItem, IndustryWatchItem, ToolItem, PlaybookItem, StrategicSignalItem, BriefingPromptItem, ExecutiveTakeawayItem, AiNativeOrgData } from './issue';
 
 export type CoverPageData = {
   headline: string;
@@ -13,16 +13,35 @@ export type EditorialPageData = {
   edition: number;
 };
 
-export type DevelopmentsPageData = {
-  items: DevelopmentItem[];
+export type CoverStoryIntroPageData = {
+  headline: string;
+  subheadline: string;
+  introduction: string;
+  pullQuote?: string;
+};
+
+export type CoverStoryAnalysisPageData = {
+  analysis: string;
+  pullQuotes: string[];
+};
+
+export type CoverStoryImplicationsPageData = {
+  strategicImplications: string;
+  pullQuotes: string[];
 };
 
 export type ImplicationsPageData = {
   items: ImplicationItem[];
+  pullQuote?: string;
 };
 
 export type EnterprisePageData = {
   items: EnterpriseItem[];
+  pullQuote?: string;
+};
+
+export type IndustryWatchPageData = {
+  items: IndustryWatchItem[];
 };
 
 export type ToolsPageData = {
@@ -31,10 +50,36 @@ export type ToolsPageData = {
 
 export type PlaybooksPageData = {
   items: PlaybookItem[];
+  pullQuote?: string;
+};
+
+export type StrategicSignalsPageData = {
+  items: StrategicSignalItem[];
+};
+
+export type BriefingPromptsPageData = {
+  items: BriefingPromptItem[];
+};
+
+export type ExecutiveBriefingPageData = {
+  items: ExecutiveTakeawayItem[];
+};
+
+export type AiNativeOrgPageData = {
+  data: AiNativeOrgData | null;
+};
+
+export type WhyThisMattersPageData = {
+  content: string;
 };
 
 export type ClosingPageData = {
   edition: number;
   month: string;
   year: number;
+};
+
+export type SectionDividerPageData = {
+  title: string;
+  subtitle?: string;
 };

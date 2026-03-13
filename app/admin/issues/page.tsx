@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import IssueStatusBadge from '@/components/admin/IssueStatusBadge';
-import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { SkeletonBlock } from '@/components/shared/Skeleton';
 import EmptyState from '@/components/shared/EmptyState';
 import { shortMonthName } from '@/lib/utils/format-date';
 import type { IssueSummary, IssueStatus } from '@/lib/types/issue';
@@ -64,7 +64,17 @@ export default function IssueListPage() {
       {/* Table */}
       <div className="bg-[#222222] border border-[#333333] rounded-lg overflow-hidden">
         {loading ? (
-          <div className="flex justify-center py-12"><LoadingSpinner /></div>
+          <div className="p-5 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-8">
+                <SkeletonBlock className="h-3 w-10" />
+                <SkeletonBlock className="h-3 w-16" />
+                <SkeletonBlock className="h-3 flex-1" />
+                <SkeletonBlock className="h-5 w-16 rounded-full" />
+                <SkeletonBlock className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
         ) : error ? (
           <div className="py-12 text-center text-[#C0392B] text-sm">{error}</div>
         ) : issues.length === 0 ? (

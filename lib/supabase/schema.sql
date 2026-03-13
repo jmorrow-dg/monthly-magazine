@@ -22,10 +22,17 @@ CREATE TABLE issues (
   editorial_note      TEXT,
 
   developments_json   JSONB DEFAULT '[]'::jsonb,
+  cover_story_json    JSONB DEFAULT '{}'::jsonb,
   implications_json   JSONB DEFAULT '[]'::jsonb,
   enterprise_json     JSONB DEFAULT '[]'::jsonb,
+  industry_watch_json JSONB DEFAULT '[]'::jsonb,
   tools_json          JSONB DEFAULT '[]'::jsonb,
   playbooks_json      JSONB DEFAULT '[]'::jsonb,
+  strategic_signals_json JSONB DEFAULT '[]'::jsonb,
+  briefing_prompts_json JSONB DEFAULT '[]'::jsonb,
+  executive_briefing_json JSONB DEFAULT '[]'::jsonb,
+  ai_native_org_json  JSONB,
+  why_this_matters    TEXT,
 
   html_snapshot       TEXT,
   pdf_url             TEXT,
@@ -42,11 +49,16 @@ CREATE TABLE issues (
 CREATE TABLE issue_pages (
   id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   issue_id            UUID NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
-  page_number         INTEGER NOT NULL CHECK (page_number BETWEEN 1 AND 8),
+  page_number         INTEGER NOT NULL CHECK (page_number BETWEEN 1 AND 20),
   page_type           TEXT NOT NULL
                         CHECK (page_type IN (
-                          'cover', 'editorial', 'developments', 'implications',
-                          'enterprise', 'tools', 'playbooks', 'closing'
+                          'cover', 'editorial', 'executive-briefing', 'cover-story-intro',
+                          'cover-story-analysis', 'cover-story-implications',
+                          'strategic-implications', 'enterprise',
+                          'ai-native-org', 'briefing-prompts', 'industry-watch', 'tools', 'playbook',
+                          'playbook-continued', 'strategic-signals', 'why-this-matters',
+                          'closing', 'section-divider',
+                          'developments', 'implications', 'playbooks'
                         )),
   spread_position     TEXT CHECK (spread_position IN ('left', 'right', 'full')),
   title               TEXT,

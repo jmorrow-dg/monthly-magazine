@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/', '/api/auth', '/issues'];
+const PUBLIC_PATHS = ['/', '/api/auth', '/issues', '/latest'];
 const PUBLIC_PREFIXES = ['/issues/'];
 const STATIC_PREFIXES = ['/_next', '/images', '/favicon.ico'];
 
@@ -23,8 +23,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow GET requests to /api/issues (public list) and /api/issues/latest
-  if (pathname === '/api/issues/latest' || (pathname === '/api/issues' && request.method === 'GET')) {
+  // Allow GET requests to public issue API endpoints
+  if (request.method === 'GET') {
+    if (
+      pathname === '/api/issues/latest'
+      || pathname === '/api/issues'
+      || pathname.match(/^\/api\/issues\/[^/]+\/render$/)
+      || pathname.match(/^\/api\/issues\/[^/]+$/)
+    ) {
+      return NextResponse.next();
+    }
+  }
+
+  // Allow public unsubscribe endpoint (accessed from email links)
+  if (pathname.match(/^\/api\/subscribers\/[^/]+\/unsubscribe$/) && request.method === 'GET') {
     return NextResponse.next();
   }
 

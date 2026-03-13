@@ -1,7 +1,9 @@
 export type IssueStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived';
 
-export type PageType = 'cover' | 'editorial' | 'developments' | 'implications'
-  | 'enterprise' | 'tools' | 'playbooks' | 'closing';
+export type PageType = 'cover' | 'editorial' | 'cover-story-intro' | 'cover-story-analysis'
+  | 'cover-story-implications' | 'strategic-implications' | 'enterprise' | 'industry-watch'
+  | 'tools' | 'playbook' | 'playbook-continued' | 'strategic-signals'
+  | 'executive-briefing' | 'ai-native-org' | 'briefing-prompts' | 'why-this-matters' | 'section-divider' | 'closing';
 
 export type SpreadPosition = 'left' | 'right' | 'full';
 
@@ -9,6 +11,20 @@ export type AssetType = 'cover_image' | 'section_image' | 'pdf' | 'icon';
 
 export type ReviewStatus = 'submitted' | 'approved' | 'changes_requested';
 
+// -- Cover Story (spans pages 3-5) --
+
+export type CoverStory = {
+  headline: string;
+  subheadline: string;
+  introduction: string;
+  analysis: string;
+  strategic_implications: string;
+  pull_quotes: string[];
+};
+
+// -- Legacy type (kept for backward compatibility) --
+
+/** @deprecated Use CoverStory instead */
 export type DevelopmentItem = {
   headline: string;
   summary: string;
@@ -17,6 +33,8 @@ export type DevelopmentItem = {
   significance: 'high' | 'medium';
   category: string;
 };
+
+// -- Section item types --
 
 export type ImplicationItem = {
   title: string;
@@ -30,6 +48,13 @@ export type EnterpriseItem = {
   description: string;
   adoption_stage: 'early' | 'growing' | 'mainstream';
   industry: string;
+};
+
+export type IndustryWatchItem = {
+  industry: string;
+  headline: string;
+  description: string;
+  trend_direction: 'accelerating' | 'emerging' | 'stabilising' | 'declining';
 };
 
 export type ToolItem = {
@@ -47,6 +72,37 @@ export type PlaybookItem = {
   outcome: string;
 };
 
+export type StrategicSignalItem = {
+  signal: string;
+  context: string;
+  implication: string;
+};
+
+export type BriefingPromptItem = {
+  question: string;
+  explanation: string;
+};
+
+export type ExecutiveTakeawayItem = {
+  headline: string;
+  explanation: string;
+};
+
+export type AiNativeOrgLayer = 'strategy' | 'workflow' | 'agent' | 'model' | 'infrastructure';
+
+export type AiNativeOrgSignal = {
+  headline: string;
+  explanation: string;
+};
+
+export type AiNativeOrgData = {
+  signals: AiNativeOrgSignal[];
+  layer_in_focus: AiNativeOrgLayer;
+  layer_focus_text: string;
+};
+
+// -- Issue --
+
 export type Issue = {
   id: string;
   title: string;
@@ -59,11 +115,19 @@ export type Issue = {
   cover_edition_label: string | null;
   cover_image_url: string | null;
   editorial_note: string | null;
+  /** @deprecated Use cover_story_json instead */
   developments_json: DevelopmentItem[];
+  cover_story_json: CoverStory | null;
   implications_json: ImplicationItem[];
   enterprise_json: EnterpriseItem[];
+  industry_watch_json: IndustryWatchItem[];
   tools_json: ToolItem[];
   playbooks_json: PlaybookItem[];
+  strategic_signals_json: StrategicSignalItem[];
+  briefing_prompts_json: BriefingPromptItem[];
+  executive_briefing_json: ExecutiveTakeawayItem[];
+  ai_native_org_json: AiNativeOrgData | null;
+  why_this_matters: string | null;
   html_snapshot: string | null;
   pdf_url: string | null;
   created_at: string;

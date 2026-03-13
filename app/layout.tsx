@@ -16,6 +16,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://magazine.davidandgoliath.ai'),
   title: "DG AI Intelligence Report",
   description: "David & Goliath AI Intelligence Magazine Generator",
   icons: {

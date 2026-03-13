@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAuthenticated } from '@/lib/auth';
 import { getIssue, updateIssue, uploadPdf, createIssueAsset } from '@/lib/supabase/queries';
-import { generateMagazinePdf } from '@/lib/pdf/generator';
+import { generateStandardPdf } from '@/lib/pdf/generator';
 
 type RouteContext = { params: Promise<{ issueId: string }> };
 
@@ -20,7 +20,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     // Generate PDF
-    const pdfBuffer = await generateMagazinePdf(issue);
+    const pdfBuffer = await generateStandardPdf(issue);
 
     // Upload to Supabase Storage
     const pdfUrl = await uploadPdf(issueId, pdfBuffer);

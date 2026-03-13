@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["/Users/joshmorrowdavidgoliath/David & Goliath OS System/dg-magazine-generator/.claude/start-dev.sh"],
+      "port": 3001
     }
   ]
 }

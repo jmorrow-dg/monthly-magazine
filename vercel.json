@@ -10,6 +10,12 @@
     "app/api/issues/[issueId]/publish/route.ts": {
       "maxDuration": 300,
       "memory": 3009
+    },
+    "app/api/issues/[issueId]/ai-generate/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/issues/[issueId]/distribute/route.ts": {
+      "maxDuration": 120
     }
   }
 }
