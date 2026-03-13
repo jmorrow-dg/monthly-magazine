@@ -19,6 +19,11 @@ import { renderStrategicSignals } from '@/lib/templates/page-12-strategic-signal
 import { renderWhyThisMatters } from '@/lib/templates/page-13-personalized-insight';
 import { renderClosing } from '@/lib/templates/page-14-closing';
 import { renderSectionDividerPage } from '@/lib/templates/page-section-divider';
+import { renderAdoptionCurve } from '@/lib/templates/page-visual-adoption-curve';
+import { renderCapabilityStack } from '@/lib/templates/page-visual-capability-stack';
+import { renderAdoptionMap } from '@/lib/templates/page-visual-adoption-map';
+import { renderTransformationPathway } from '@/lib/templates/page-visual-transformation-pathway';
+import { renderGlobalLandscape } from '@/lib/templates/page-visual-global-landscape';
 import { monthName, editionLabel as buildEditionLabel } from '@/lib/utils/format-date';
 import { sanitiseDashes } from '@/lib/utils/sanitise-dashes';
 
@@ -49,38 +54,44 @@ export async function GET(request: Request, context: RouteContext) {
 
     const coverStory = issue.cover_story_json;
 
-    // 19-page structure
+    // 24-page structure (5 data storytelling visuals)
     const pages = [
       /* 1  */ renderCover({ headline: issue.cover_headline, subtitle: issue.cover_subtitle, editionLabel: label, coverImageUrl: issue.cover_image_url }),
       /* 2  */ renderEditorial({ note: issue.editorial_note || '', month, edition: issue.edition }),
       /* 3  */ renderExecutiveBriefing({ items: issue.executive_briefing_json || [], coverHeadline: issue.cover_headline }),
-      /* 4  */ renderWhyThisMatters({ content: issue.why_this_matters || '' }),
-      /* 5  */ renderSectionDividerPage({ title: 'Cover Story' }),
-      /* 6  */ renderCoverStoryIntro({
+      /* 4  */ renderGlobalLandscape({ regions: issue.global_landscape_json?.regions }),
+      /* 5  */ renderWhyThisMatters({ content: issue.why_this_matters || '' }),
+      /* 6  */ renderSectionDividerPage({ title: 'Cover Story', subtitle: issue.cover_headline }),
+      /* 7  */ renderCoverStoryIntro({
         headline: coverStory?.headline || issue.cover_headline,
         subheadline: coverStory?.subheadline || '',
         introduction: coverStory?.introduction || '',
         pullQuote: coverStory?.pull_quotes?.[0],
       }),
-      /* 7  */ renderCoverStoryAnalysis({
+      /* 8  */ renderCoverStoryAnalysis({
         analysis: coverStory?.analysis || '',
         pullQuotes: coverStory?.pull_quotes?.slice(1, 3) || [],
       }),
-      /* 8  */ renderCoverStoryImplications({
+      /* 9  */ renderCoverStoryImplications({
         strategicImplications: coverStory?.strategic_implications || '',
         pullQuotes: coverStory?.pull_quotes?.slice(3, 5) || [],
+        evidence: coverStory?.evidence,
       }),
-      /* 9  */ renderImplications({ items: issue.implications_json || [], pullQuote: coverStory?.pull_quotes?.[4] }),
-      /* 10 */ renderAiNativeOrg({ data: issue.ai_native_org_json || null }),
-      /* 11 */ renderEnterprise({ items: issue.enterprise_json || [], pullQuote: coverStory?.pull_quotes?.[5] }),
-      /* 12 */ renderBriefingPrompts({ items: issue.briefing_prompts_json || [] }),
-      /* 13 */ renderIndustryWatch({ items: issue.industry_watch_json || [] }),
-      /* 14 */ renderTools({ items: issue.tools_json || [] }),
-      /* 15 */ renderSectionDividerPage({ title: 'Operator Playbooks' }),
-      /* 16 */ renderPlaybooks({ items: issue.playbooks_json || [], pullQuote: coverStory?.pull_quotes?.[3] }),
-      /* 17 */ renderPlaybooksContinued({ items: issue.playbooks_json || [] }),
-      /* 18 */ renderStrategicSignals({ items: issue.strategic_signals_json || [] }),
-      /* 19 */ renderClosing({ edition: issue.edition, month, year: issue.year }),
+      /* 10 */ renderImplications({ items: issue.implications_json || [], pullQuote: coverStory?.pull_quotes?.[4], regionalSignals: issue.regional_signals_json?.implications }),
+      /* 11 */ renderAdoptionCurve(),
+      /* 12 */ renderAiNativeOrg({ data: issue.ai_native_org_json || null }),
+      /* 13 */ renderCapabilityStack(),
+      /* 14 */ renderEnterprise({ items: issue.enterprise_json || [], pullQuote: coverStory?.pull_quotes?.[5], regionalSignals: issue.regional_signals_json?.enterprise }),
+      /* 15 */ renderAdoptionMap(),
+      /* 16 */ renderBriefingPrompts({ items: issue.briefing_prompts_json || [] }),
+      /* 17 */ renderIndustryWatch({ items: issue.industry_watch_json || [] }),
+      /* 18 */ renderTools({ items: issue.tools_json || [] }),
+      /* 19 */ renderSectionDividerPage({ title: 'Operator Playbooks' }),
+      /* 20 */ renderPlaybooks({ items: issue.playbooks_json || [], pullQuote: coverStory?.pull_quotes?.[3] }),
+      /* 21 */ renderTransformationPathway(),
+      /* 22 */ renderPlaybooksContinued({ items: issue.playbooks_json || [] }),
+      /* 23 */ renderStrategicSignals({ items: issue.strategic_signals_json || [] }),
+      /* 24 */ renderClosing({ edition: issue.edition, month, year: issue.year, shareInsight: issue.cover_headline }),
     ];
 
     // Render-time punctuation sanitisation (catches old content too)

@@ -14,13 +14,13 @@ export function renderPlaybooksContinued(data: PlaybooksPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(17)}
+    ${renderMagazineHeader(22)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('playbook', 'More Plays to Run')}
 
       ${items.map((item) => renderCard(`
-        <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10pt; color: ${COLORS.white}; margin-bottom: 4pt; line-height: 1.3;">
+        <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10pt; color: ${COLORS.white}; margin-bottom: 6pt; line-height: 1.3;">
           ${escapeHtml(item.title)}
         </div>
         <p style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.midGrey}; line-height: 1.45; margin-bottom: 8pt; font-style: italic;">
@@ -29,7 +29,7 @@ export function renderPlaybooksContinued(data: PlaybooksPageData): string {
 
         <div style="margin-bottom: 8pt;">
           ${item.steps.map((step, i) => `
-            <div style="display: flex; align-items: flex-start; margin-bottom: 4pt;">
+            <div style="display: flex; align-items: flex-start; margin-bottom: 6pt;">
               <div style="width: 14pt; height: 14pt; border-radius: 7pt; background: ${COLORS.card2}; border: 0.4pt solid ${COLORS.gold}; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8pt; margin-top: 1pt;">
                 <span style="font-family: 'Inter', sans-serif; font-size: 6.5pt; font-weight: 700; color: ${COLORS.gold};">${i + 1}</span>
               </div>
@@ -47,7 +47,7 @@ export function renderPlaybooksContinued(data: PlaybooksPageData): string {
       `, { marginBottom: '8pt' })).join('')}
     </div>
 
-    ${renderMagazineFooter(17)}
+    ${renderMagazineFooter(22)}
   </div>
 </body>
 </html>`;

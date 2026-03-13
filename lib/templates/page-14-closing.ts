@@ -1,6 +1,7 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
 import { dgLogoDataUri, goldCurvesBgDataUri } from './shared/assets';
 import { escapeHtml } from '@/lib/utils/escape-html';
+import { renderShareSnippet } from './shared/components';
 import type { ClosingPageData } from '@/lib/types/templates';
 
 export function renderClosing(data: ClosingPageData): string {
@@ -61,10 +62,14 @@ export function renderClosing(data: ClosingPageData): string {
         </div>
       </div>
 
+      ${data.shareInsight ? renderShareSnippet(data.shareInsight) : ''}
+
+      <div style="margin-top: ${data.shareInsight ? '16pt' : '0'};">
       <!-- CTA -->
       <a href="https://davidandgoliath.ai" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 10pt 30pt; background: ${COLORS.gold}; border-radius: 5pt; margin-bottom: 20pt; text-decoration: none;">
         <span style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 8.5pt; color: ${COLORS.white}; text-transform: uppercase; letter-spacing: 0.5pt;">Book an Intelligence Briefing</span>
       </a>
+      </div>
 
       <!-- Contact -->
       <div style="text-align: center;">

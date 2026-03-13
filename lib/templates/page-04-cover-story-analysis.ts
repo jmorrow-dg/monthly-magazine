@@ -18,7 +18,7 @@ export function renderCoverStoryAnalysis(data: CoverStoryAnalysisPageData): stri
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(7)}
+    ${renderMagazineHeader(8)}
 
     <div style="margin-top: 52pt;">
       <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt; margin-bottom: 14pt;">
@@ -34,7 +34,7 @@ export function renderCoverStoryAnalysis(data: CoverStoryAnalysisPageData): stri
       ${data.pullQuotes.length > 1 ? renderPullQuote(data.pullQuotes[1]) : ''}
     </div>
 
-    ${renderMagazineFooter(7)}
+    ${renderMagazineFooter(8)}
   </div>
 </body>
 </html>`;

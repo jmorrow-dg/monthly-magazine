@@ -11,7 +11,7 @@ const TREND_COLORS: Record<string, string> = {
 };
 
 export function renderIndustryWatch(data: IndustryWatchPageData): string {
-  const items = data.items.slice(0, 6);
+  const items = data.items.slice(0, 4);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -21,7 +21,7 @@ export function renderIndustryWatch(data: IndustryWatchPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(13)}
+    ${renderMagazineHeader(17)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('industry-watch', 'Industry Watch')}
@@ -48,11 +48,11 @@ export function renderIndustryWatch(data: IndustryWatchPageData): string {
           <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.55; margin: 0;">
             ${escapeHtml(item.description)}
           </p>
-        `, { marginBottom: '7pt' });
+        `, { marginBottom: '10pt' });
       }).join('')}
     </div>
 
-    ${renderMagazineFooter(13)}
+    ${renderMagazineFooter(17)}
   </div>
 </body>
 </html>`;

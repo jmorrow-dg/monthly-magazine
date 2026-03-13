@@ -10,13 +10,15 @@ import type {
   BriefingPromptItem,
   ExecutiveTakeawayItem,
   AiNativeOrgData,
+  RegionalSignal,
 } from '@/lib/types/issue';
+import type { GlobalLandscapeRegion } from '@/lib/templates/page-visual-global-landscape';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const SYSTEM = `You are an AI strategist writing for the David & Goliath AI Intelligence Report, a premium monthly magazine for Australian business operators. Your tone is authoritative, insightful, and practical. You write in Australian English (organisation, optimise, analyse, etc.).
+const SYSTEM = `You are an AI strategist writing for the David & Goliath AI Intelligence Report, a premium monthly intelligence publication for operators, founders, and executives navigating AI adoption globally. Your tone is authoritative, insightful, and practical. You write in Australian English (organisation, optimise, analyse, etc.). Draw signals from major AI labs, enterprise technology companies, global startups, infrastructure providers, and regulatory developments across North America, Europe, Asia, and emerging markets.
 
 CRITICAL PUNCTUATION RULE: NEVER use em dashes (—), en dashes (–), or hyphens as punctuation (e.g. " - "). Use commas, semicolons, colons, or restructure the sentence instead. This applies to all text including pull quotes, descriptions, and editorial content.
 
@@ -63,7 +65,7 @@ export async function generateCoverStory(
   sources: string[],
   instructions?: string,
 ): Promise<CoverStory> {
-  const prompt = `Based on the following source material, write a compelling cover story for a premium AI intelligence report aimed at Australian business operators. The story should synthesise the most significant AI developments into a cohesive narrative with strategic business implications.
+  const prompt = `Based on the following source material, write a compelling cover story for a premium AI intelligence report aimed at operators, founders, and executives globally. The story should synthesise the most significant AI developments into a cohesive narrative with strategic business implications. Draw on examples from companies, labs, and developments across multiple regions.
 
 Source material:
 ${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}
@@ -76,8 +78,12 @@ Return a JSON object matching this schema:
   "subheadline": "string (supporting context, max 25 words)",
   "introduction": "string (approximately 500 words, sets the scene and introduces the core theme, engaging opening)",
   "analysis": "string (approximately 650 words, deep dive into the developments, data points, expert perspectives)",
-  "strategic_implications": "string (approximately 500 words, what this means for Australian businesses, actionable takeaways)",
-  "pull_quotes": ["array of 4-6 impactful quotes or statistics pulled from the narrative"]
+  "strategic_implications": "string (approximately 500 words, what this means for operators and organisations globally, actionable takeaways)",
+  "pull_quotes": ["array of 4-6 impactful quotes or statistics pulled from the narrative"],
+  "evidence": {
+    "statement": "string (one concise supporting evidence statement, max 30 words, referencing a specific data point, industry report finding, or observable market pattern)",
+    "implication": "string (one sentence strategic implication of the evidence, max 25 words)"
+  }
 }
 
 Separate paragraphs within introduction, analysis, and strategic_implications with double newlines.
@@ -91,7 +97,7 @@ export async function generateImplications(
   coverStory: CoverStory,
   instructions?: string,
 ): Promise<ImplicationItem[]> {
-  const prompt = `Based on this cover story, identify 4 strategic implications for Australian business operators:
+  const prompt = `Based on this cover story, identify 4 strategic implications for operators and executives globally:
 
 Cover Story: ${coverStory.headline}
 ${coverStory.subheadline}
@@ -106,7 +112,9 @@ Return a JSON array of exactly 4 items:
   "title": "string (max 20 words)",
   "description": "string (max 80 words)",
   "impact_level": "transformative" | "significant" | "emerging",
-  "sector_relevance": ["string array of relevant sectors"]
+  "sector_relevance": ["string array of relevant sectors"],
+  "source_signal": "string (concise signal source, max 10 words, e.g. 'Enterprise technology analyst reports, Q1 2026')",
+  "data_point": "string (short data indicator, e.g. '72% of enterprises expanding AI pilots' or '$180B projected infrastructure spend')"
 }]
 
 Return ONLY the JSON array.`;
@@ -133,7 +141,9 @@ Return a JSON array of exactly 4 items:
   "title": "string (max 20 words)",
   "description": "string (max 80 words)",
   "adoption_stage": "early" | "growing" | "mainstream",
-  "industry": "string"
+  "industry": "string",
+  "source_signal": "string (concise signal source, max 10 words, e.g. 'Industry deployment surveys, 2026')",
+  "data_point": "string (short data indicator, e.g. '3x increase in production deployments' or '45% cost reduction reported')"
 }]
 
 Return ONLY the JSON array.`;
@@ -146,7 +156,7 @@ export async function generateIndustryWatch(
   coverStory: CoverStory,
   instructions?: string,
 ): Promise<IndustryWatchItem[]> {
-  const prompt = `Based on the source material and cover story context, identify 4-6 industry-specific AI trends worth watching for Australian business operators. Each should focus on a different industry sector.
+  const prompt = `Based on the source material and cover story context, identify 4-6 industry-specific AI trends worth watching for operators and executives globally. Each should focus on a different industry sector. Include developments from companies and markets across multiple regions.
 
 Source material:
 ${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}
@@ -198,7 +208,7 @@ export async function generatePlaybooks(
   coverStory: CoverStory,
   instructions?: string,
 ): Promise<PlaybookItem[]> {
-  const prompt = `Based on this cover story, create 4 practical operator playbooks that Australian business leaders can implement:
+  const prompt = `Based on this cover story, create 4 practical operator playbooks that business leaders can implement regardless of region or market:
 
 Cover Story: ${coverStory.headline}
 ${coverStory.subheadline}
@@ -229,7 +239,7 @@ export async function generateStrategicSignals(
   implications: ImplicationItem[],
   instructions?: string,
 ): Promise<StrategicSignalItem[]> {
-  const prompt = `Based on the cover story and strategic implications, identify 4-6 strategic signals that forward-thinking Australian business operators should be monitoring. These are early indicators of shifts that will shape the business landscape.
+  const prompt = `Based on the cover story and strategic implications, identify 4-6 strategic signals that forward-thinking operators and executives should be monitoring globally. These are early indicators of shifts that will shape the business landscape. Draw signals from AI labs, enterprise technology, regulatory developments, and adoption patterns across multiple regions.
 
 Cover Story: ${coverStory.headline}
 ${coverStory.subheadline}
@@ -405,9 +415,9 @@ Requirements:
 Return a JSON object:
 {
   "signals": [
-    { "headline": "string (max 10 words)", "explanation": "string (max 50 words)" },
-    { "headline": "string (max 10 words)", "explanation": "string (max 50 words)" },
-    { "headline": "string (max 10 words)", "explanation": "string (max 50 words)" }
+    { "headline": "string (max 10 words)", "explanation": "string (max 50 words)", "source_signal": "string (concise source, max 8 words)" },
+    { "headline": "string (max 10 words)", "explanation": "string (max 50 words)", "source_signal": "string (concise source, max 8 words)" },
+    { "headline": "string (max 10 words)", "explanation": "string (max 50 words)", "source_signal": "string (concise source, max 8 words)" }
   ],
   "layer_in_focus": "${focusLayer}",
   "layer_focus_text": "string (max 120 words, analytical paragraph)"
@@ -459,4 +469,79 @@ Return ONLY the editorial text, no JSON wrapping.`;
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('');
+}
+
+export async function generateRegionalSignals(
+  coverStory: CoverStory,
+  context: string,
+  instructions?: string,
+): Promise<{ implications: RegionalSignal[]; enterprise: RegionalSignal[] }> {
+  const prompt = `Based on this cover story, generate two sets of regional signals showing how global AI developments manifest differently across key regions. Each set has exactly 3 signals (United States, Europe, Asia).
+
+Cover Story: ${coverStory.headline}
+${coverStory.subheadline}
+
+Context: ${context}
+
+${instructions ? `Additional instructions: ${instructions}` : ''}
+
+Requirements:
+- Each signal: max 20 words, concise and specific
+- Signals should highlight meaningful regional differences in the same global trend
+- Focus on: enterprise deployments, regulatory changes, infrastructure investments, major technology initiatives
+- Avoid minor local news or repetitive phrasing
+- Use Australian English
+- Do NOT use em dashes, en dashes, or hyphens as punctuation
+
+Return a JSON object:
+{
+  "implications": [
+    { "region": "United States", "signal": "string (max 20 words)" },
+    { "region": "Europe", "signal": "string (max 20 words)" },
+    { "region": "Asia", "signal": "string (max 20 words)" }
+  ],
+  "enterprise": [
+    { "region": "United States", "signal": "string (max 20 words)" },
+    { "region": "Europe", "signal": "string (max 20 words)" },
+    { "region": "Asia", "signal": "string (max 20 words)" }
+  ]
+}
+
+Return ONLY the JSON object.`;
+
+  return generate<{ implications: RegionalSignal[]; enterprise: RegionalSignal[] }>(prompt);
+}
+
+export async function generateGlobalLandscape(
+  coverStory: CoverStory,
+  instructions?: string,
+): Promise<GlobalLandscapeRegion[]> {
+  const prompt = `Based on this cover story, generate regional AI landscape data for four regions. Each region should have 3 signals highlighting the most significant AI developments in that region this month.
+
+Cover Story: ${coverStory.headline}
+${coverStory.subheadline}
+
+Key themes:
+${coverStory.introduction.slice(0, 400)}
+
+${instructions ? `Additional instructions: ${instructions}` : ''}
+
+Requirements:
+- Each signal: max 15 words, concise
+- Signals should be specific and current, not generic
+- Cover: enterprise adoption, regulatory shifts, infrastructure investment, technology developments
+- Use Australian English
+- Do NOT use em dashes, en dashes, or hyphens as punctuation
+
+Return a JSON array of exactly 4 regions:
+[
+  { "name": "North America", "signals": ["signal 1", "signal 2", "signal 3"] },
+  { "name": "Europe", "signals": ["signal 1", "signal 2", "signal 3"] },
+  { "name": "Asia", "signals": ["signal 1", "signal 2", "signal 3"] },
+  { "name": "Global Networks", "signals": ["signal 1", "signal 2", "signal 3"] }
+]
+
+Return ONLY the JSON array.`;
+
+  return generate<GlobalLandscapeRegion[]>(prompt);
 }

@@ -14,7 +14,7 @@ export function renderTools(data: ToolsPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(14)}
+    ${renderMagazineHeader(18)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('tools', 'Tools Worth Watching')}
@@ -44,7 +44,7 @@ export function renderTools(data: ToolsPageData): string {
       </div>
     </div>
 
-    ${renderMagazineFooter(14)}
+    ${renderMagazineFooter(18)}
   </div>
 </body>
 </html>`;

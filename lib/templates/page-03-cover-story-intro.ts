@@ -12,7 +12,7 @@ export function renderCoverStoryIntro(data: CoverStoryIntroPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(6)}
+    ${renderMagazineHeader(7)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('cover-story', 'Cover Story')}
@@ -27,10 +27,10 @@ export function renderCoverStoryIntro(data: CoverStoryIntroPageData): string {
 
       ${data.pullQuote ? renderPullQuote(data.pullQuote) : ''}
 
-      ${renderColumnText(data.introduction)}
+      ${renderColumnText(data.introduction, { dropCap: true })}
     </div>
 
-    ${renderMagazineFooter(6)}
+    ${renderMagazineFooter(7)}
   </div>
 </body>
 </html>`;

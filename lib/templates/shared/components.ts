@@ -104,10 +104,17 @@ export function goldBullet(): string {
  * Two-column text layout using CSS columns.
  * Splits text paragraphs across two balanced columns.
  */
-export function renderColumnText(text: string): string {
+export function renderColumnText(text: string, opts?: { dropCap?: boolean }): string {
   const paragraphs = text.split(/\n\n+/).filter(Boolean);
   const html = paragraphs
-    .map(p => `<p style="font-family: 'Inter', sans-serif; font-size: 8.5pt; color: ${COLORS.lightGrey}; line-height: 1.65; margin-bottom: 8pt;">${escapeHtml(p)}</p>`)
+    .map((p, i) => {
+      if (i === 0 && opts?.dropCap && p.length > 0) {
+        const first = escapeHtml(p.charAt(0));
+        const rest = escapeHtml(p.slice(1));
+        return `<p style="font-family: 'Inter', sans-serif; font-size: 8.5pt; color: ${COLORS.lightGrey}; line-height: 1.65; margin-bottom: 8pt;"><span style="float: left; font-family: 'Playfair Display', serif; font-size: 36pt; font-weight: 700; color: ${COLORS.gold}; line-height: 0.8; margin-right: 4pt; margin-top: 3pt;">${first}</span>${rest}</p>`;
+      }
+      return `<p style="font-family: 'Inter', sans-serif; font-size: 8.5pt; color: ${COLORS.lightGrey}; line-height: 1.65; margin-bottom: 8pt;">${escapeHtml(p)}</p>`;
+    })
     .join('');
 
   return `
@@ -229,6 +236,140 @@ export function renderFigureCaption(figureNumber: number, title: string, explana
         ${escapeHtml(title)}
       </div>
       ${explanation ? `<div style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.lightGrey}; line-height: 1.4; margin-top: 2pt;">${escapeHtml(explanation)}</div>` : ''}
+    </div>
+  `;
+}
+
+/**
+ * Key Insight callout card.
+ * Gold label, concise strategic observation. Designed to be screenshot-friendly.
+ */
+export function renderKeyInsight(headline: string, body: string): string {
+  return renderCard(`
+    <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt; margin-bottom: 6pt;">
+      Key Insight
+    </div>
+    <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 9.5pt; color: ${COLORS.white}; line-height: 1.3; margin-bottom: 6pt;">
+      ${escapeHtml(headline)}
+    </div>
+    <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.55; margin: 0;">
+      ${escapeHtml(body)}
+    </p>
+  `);
+}
+
+/**
+ * Share snippet for the closing page.
+ * Provides a concise, copy-friendly insight statement with suggested caption.
+ */
+export function renderShareSnippet(insight: string): string {
+  return `
+    <div style="max-width: 340pt; margin: 0 auto; text-align: center;">
+      <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1.5pt; margin-bottom: 10pt;">
+        Share This Insight
+      </div>
+      <div style="padding: 12pt 16pt; background: rgba(184,134,11,0.06); border: 0.4pt solid rgba(184,134,11,0.2); border-radius: 5pt; margin-bottom: 8pt;">
+        <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 10pt; color: ${COLORS.offWhite}; line-height: 1.5; margin: 0;">
+          &ldquo;${escapeHtml(insight)}&rdquo;
+        </p>
+      </div>
+      <div style="font-family: 'Inter', sans-serif; font-size: 6.5pt; color: ${COLORS.midGrey}; line-height: 1.5;">
+        From the David &amp; Goliath AI Intelligence Report
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Signal source tag: subtle inline reference for credibility.
+ * Appears as a small grey tag indicating where a signal originates.
+ */
+export function renderSignalSource(source: string): string {
+  return `
+    <div style="display: inline-flex; align-items: center; gap: 4pt; margin-top: 6pt;">
+      <div style="width: 3pt; height: 3pt; border-radius: 50%; background: ${COLORS.gold}; opacity: 0.5;"></div>
+      <span style="font-family: 'Inter', sans-serif; font-size: 6pt; color: ${COLORS.midGrey}; letter-spacing: 0.2pt;">
+        ${escapeHtml(source)}
+      </span>
+    </div>
+  `;
+}
+
+/**
+ * Evidence block: compact two-part panel showing evidence + strategic implication.
+ * Used to reinforce credibility on key insight pages.
+ */
+export function renderEvidenceBlock(evidence: string, implication: string): string {
+  return `
+    <div style="border-left: 2pt solid rgba(184,134,11,0.4); padding: 8pt 12pt; background: rgba(184,134,11,0.03); margin-top: 8pt;">
+      <div style="display: flex; align-items: center; gap: 4pt; margin-bottom: 5pt;">
+        <svg width="10" height="10" viewBox="0 0 16 16" style="flex-shrink: 0;">
+          <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 5v3.5M8 10.5v.5" stroke="${COLORS.gold}" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 0.8pt;">
+          Supporting Evidence
+        </span>
+      </div>
+      <p style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.lightGrey}; line-height: 1.5; margin: 0 0 6pt 0;">
+        ${escapeHtml(evidence)}
+      </p>
+      <div style="padding-top: 5pt; border-top: 0.4pt solid ${COLORS.rule};">
+        <span style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 6pt; color: ${COLORS.midGrey}; text-transform: uppercase; letter-spacing: 0.5pt;">Strategic Implication: </span>
+        <span style="font-family: 'Inter', sans-serif; font-size: 7pt; color: ${COLORS.offWhite}; line-height: 1.45;">
+          ${escapeHtml(implication)}
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Data indicator: compact stat callout with gold accent.
+ * Shows a short data point that reinforces a strategic insight.
+ */
+export function renderDataIndicator(value: string, label: string): string {
+  return `
+    <div style="display: flex; align-items: baseline; gap: 5pt; margin-top: 6pt; padding: 5pt 8pt; background: rgba(184,134,11,0.05); border-radius: 3pt;">
+      <span style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 11pt; color: ${COLORS.gold}; line-height: 1;">
+        ${escapeHtml(value)}
+      </span>
+      <span style="font-family: 'Inter', sans-serif; font-size: 6.5pt; color: ${COLORS.midGrey}; line-height: 1.3;">
+        ${escapeHtml(label)}
+      </span>
+    </div>
+  `;
+}
+
+/**
+ * Regional Signals panel: compact horizontal callout showing how
+ * a global development manifests differently across regions.
+ * Accepts 3 region signals (typically US, Europe, Asia).
+ */
+export function renderRegionalSignals(signals: { region: string; signal: string }[]): string {
+  if (!signals || signals.length === 0) return '';
+  return `
+    <div style="margin-top: 10pt; padding: 10pt 12pt; background: ${COLORS.card2}; border: 0.4pt solid ${COLORS.rule}; border-radius: 5pt;">
+      <div style="display: flex; align-items: center; gap: 5pt; margin-bottom: 8pt;">
+        <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink: 0;">
+          <circle cx="8" cy="8" r="6" stroke="${COLORS.gold}" stroke-width="1.2" fill="none"/>
+          <path d="M2 8h12M8 2c-2 2-2 10 0 12M8 2c2 2 2 10 0 12" stroke="${COLORS.gold}" stroke-width="0.8" fill="none"/>
+        </svg>
+        <span style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt;">
+          Regional Signals
+        </span>
+      </div>
+      <div style="display: flex; gap: 8pt;">
+        ${signals.slice(0, 3).map((s) => `
+          <div style="flex: 1; padding-left: 7pt; border-left: 2pt solid rgba(184,134,11,0.3);">
+            <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.offWhite}; margin-bottom: 3pt;">
+              ${escapeHtml(s.region)}
+            </div>
+            <div style="font-family: 'Inter', sans-serif; font-size: 7pt; color: ${COLORS.lightGrey}; line-height: 1.45;">
+              ${escapeHtml(s.signal)}
+            </div>
+          </div>
+        `).join('')}
+      </div>
     </div>
   `;
 }

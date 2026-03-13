@@ -1,5 +1,5 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderColumnText, renderPullQuote } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderColumnText, renderPullQuote, renderEvidenceBlock } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { CoverStoryImplicationsPageData } from '@/lib/types/templates';
 
@@ -18,7 +18,7 @@ export function renderCoverStoryImplications(data: CoverStoryImplicationsPageDat
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(8)}
+    ${renderMagazineHeader(9)}
 
     <div style="margin-top: 52pt;">
       <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt; margin-bottom: 14pt;">
@@ -32,9 +32,11 @@ export function renderCoverStoryImplications(data: CoverStoryImplicationsPageDat
       ${secondHalf ? renderColumnText(secondHalf) : ''}
 
       ${data.pullQuotes.length > 1 ? renderPullQuote(data.pullQuotes[1]) : ''}
+
+      ${data.evidence ? renderEvidenceBlock(data.evidence.statement, data.evidence.implication) : ''}
     </div>
 
-    ${renderMagazineFooter(8)}
+    ${renderMagazineFooter(9)}
   </div>
 </body>
 </html>`;

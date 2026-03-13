@@ -1,5 +1,5 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderCard } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderCard, renderSignalSource } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { AiNativeOrgPageData } from '@/lib/types/templates';
 import type { AiNativeOrgLayer } from '@/lib/types/issue';
@@ -49,7 +49,7 @@ export function renderAiNativeOrg(data: AiNativeOrgPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(10)}
+    ${renderMagazineHeader(12)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('ai-native-org', 'The AI Native Organisation')}
@@ -102,6 +102,7 @@ export function renderAiNativeOrg(data: AiNativeOrgPageData): string {
             <p style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.lightGrey}; line-height: 1.6; margin: 0;">
               ${escapeHtml(signal.explanation)}
             </p>
+            ${signal.source_signal ? renderSignalSource(signal.source_signal) : ''}
           `, { marginBottom: '8pt' })).join('') : `
             <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.midGrey}; line-height: 1.5;">
               Signal data will appear here once generated.
@@ -111,7 +112,7 @@ export function renderAiNativeOrg(data: AiNativeOrgPageData): string {
       </div>
     </div>
 
-    ${renderMagazineFooter(10)}
+    ${renderMagazineFooter(12)}
   </div>
 </body>
 </html>`;

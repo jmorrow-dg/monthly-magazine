@@ -4,7 +4,7 @@ import { escapeHtml } from '@/lib/utils/escape-html';
 import type { EditorialPageData } from '@/lib/types/templates';
 
 export function renderEditorial(data: EditorialPageData): string {
-  const paragraphs = (data.note || '').split('\n\n').filter(Boolean);
+  const paragraphs = (data.note || '').split('\n\n').filter(Boolean).slice(0, 3);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -36,6 +36,15 @@ export function renderEditorial(data: EditorialPageData): string {
               ${escapeHtml(p)}
             </p>
           `).join('')}
+
+          <div style="margin-top: 6pt;">
+            <div style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 11pt; color: ${COLORS.offWhite}; margin-bottom: 2pt;">
+              Josh Morrow
+            </div>
+            <div style="font-family: 'Inter', sans-serif; font-size: 7pt; color: ${COLORS.midGrey}; text-transform: uppercase; letter-spacing: 0.8pt;">
+              Founder, David &amp; Goliath
+            </div>
+          </div>
         </div>
       </div>
     </div>

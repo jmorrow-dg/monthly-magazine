@@ -3,7 +3,7 @@ import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderSect
 import type { StrategicSignalsPageData } from '@/lib/types/templates';
 
 export function renderStrategicSignals(data: StrategicSignalsPageData): string {
-  const items = data.items.slice(0, 5);
+  const items = data.items.slice(0, 4);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -13,7 +13,7 @@ export function renderStrategicSignals(data: StrategicSignalsPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(18)}
+    ${renderMagazineHeader(23)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('strategic-signals', 'Strategic Signals')}
@@ -23,7 +23,7 @@ export function renderStrategicSignals(data: StrategicSignalsPageData): string {
       ${items.map((item) => renderStrategicSignalBox(item.signal, item.context, item.implication)).join('')}
     </div>
 
-    ${renderMagazineFooter(18)}
+    ${renderMagazineFooter(23)}
   </div>
 </body>
 </html>`;

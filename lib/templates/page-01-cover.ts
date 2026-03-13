@@ -36,7 +36,7 @@ export function renderCover(data: CoverPageData): string {
     <!-- Main headline -->
     <div style="position: absolute; bottom: 140pt; left: 38pt; right: 38pt; z-index: 2;">
       <div style="width: 80pt; height: 2pt; background: ${COLORS.gold}; border-radius: 1pt; margin-bottom: 16pt;"></div>
-      <div style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 32pt; color: ${COLORS.white}; line-height: 1.15; margin-bottom: 14pt;">
+      <div style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 32pt; color: ${COLORS.white}; line-height: 1.15; margin-bottom: 14pt;">
         ${escapeHtml(data.headline)}
       </div>
       ${data.subtitle ? `

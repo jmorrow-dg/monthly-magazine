@@ -20,7 +20,7 @@ export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string
           ${escapeHtml(item.headline)}
         </div>
       </div>
-      <p style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.lightGrey}; line-height: 1.6; margin: 0;">
+      <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.6; margin: 0;">
         ${escapeHtml(item.explanation)}
       </p>
     </div>
@@ -36,7 +36,7 @@ export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string
         ${escapeHtml(data.coverHeadline)}
       </div>
       <div style="font-family: 'Inter', sans-serif; font-size: 7pt; color: ${COLORS.midGrey};">
-        See page 6 for full analysis
+        See page 7 for full analysis
       </div>
     </div>
   ` : '';

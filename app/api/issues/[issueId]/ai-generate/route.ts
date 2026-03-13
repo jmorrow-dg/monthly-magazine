@@ -16,6 +16,8 @@ import {
   generateAiNativeOrg,
   generateEditorial,
   generateWhyThisMatters,
+  generateRegionalSignals,
+  generateGlobalLandscape,
 } from '@/lib/ai/generate-content';
 
 type RouteContext = { params: Promise<{ issueId: string }> };
@@ -52,8 +54,8 @@ export async function POST(request: Request, context: RouteContext) {
       generateTools(sources, instructions),
     ]);
 
-    // Step 3: Generate playbooks, strategic signals, briefing prompts, executive briefing, editorial, and why this matters in parallel
-    const [playbooks, strategicSignals, briefingPrompts, executiveBriefing, aiNativeOrg, editorial, whyThisMatters] = await Promise.all([
+    // Step 3: Generate playbooks, strategic signals, briefing prompts, executive briefing, editorial, why this matters, regional signals, and global landscape in parallel
+    const [playbooks, strategicSignals, briefingPrompts, executiveBriefing, aiNativeOrg, editorial, whyThisMatters, regionalSignals, globalLandscape] = await Promise.all([
       generatePlaybooks(coverStory, instructions),
       generateStrategicSignals(coverStory, implications, instructions),
       generateBriefingPrompts(coverStory, implications, instructions),
@@ -61,6 +63,8 @@ export async function POST(request: Request, context: RouteContext) {
       generateAiNativeOrg(coverStory, implications, issue.edition, instructions),
       generateEditorial(coverStory, implications, monthName(issue.month), issue.edition, instructions),
       generateWhyThisMatters(coverStory, implications, instructions),
+      generateRegionalSignals(coverStory, implications.map(i => i.title).join(', '), instructions),
+      generateGlobalLandscape(coverStory, instructions),
     ]);
 
     // Post-generation: sanitise all dash characters
@@ -77,6 +81,8 @@ export async function POST(request: Request, context: RouteContext) {
       ai_native_org_json: sanitiseDashesDeep(aiNativeOrg),
       editorial_note: sanitiseDashes(editorial),
       why_this_matters: sanitiseDashes(whyThisMatters),
+      global_landscape_json: sanitiseDashesDeep({ regions: globalLandscape }),
+      regional_signals_json: sanitiseDashesDeep(regionalSignals),
     });
 
     return NextResponse.json({ issue: updated });

@@ -1,4 +1,4 @@
-import type { ImplicationItem, EnterpriseItem, IndustryWatchItem, ToolItem, PlaybookItem, StrategicSignalItem, BriefingPromptItem, ExecutiveTakeawayItem, AiNativeOrgData } from './issue';
+import type { ImplicationItem, EnterpriseItem, IndustryWatchItem, ToolItem, PlaybookItem, StrategicSignalItem, BriefingPromptItem, ExecutiveTakeawayItem, AiNativeOrgData, RegionalSignal } from './issue';
 
 export type CoverPageData = {
   headline: string;
@@ -28,16 +28,19 @@ export type CoverStoryAnalysisPageData = {
 export type CoverStoryImplicationsPageData = {
   strategicImplications: string;
   pullQuotes: string[];
+  evidence?: { statement: string; implication: string };
 };
 
 export type ImplicationsPageData = {
   items: ImplicationItem[];
   pullQuote?: string;
+  regionalSignals?: RegionalSignal[];
 };
 
 export type EnterprisePageData = {
   items: EnterpriseItem[];
   pullQuote?: string;
+  regionalSignals?: RegionalSignal[];
 };
 
 export type IndustryWatchPageData = {
@@ -72,12 +75,15 @@ export type AiNativeOrgPageData = {
 
 export type WhyThisMattersPageData = {
   content: string;
+  statValue?: string;
+  statLabel?: string;
 };
 
 export type ClosingPageData = {
   edition: number;
   month: string;
   year: number;
+  shareInsight?: string;
 };
 
 export type SectionDividerPageData = {

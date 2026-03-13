@@ -20,6 +20,7 @@ export type CoverStory = {
   analysis: string;
   strategic_implications: string;
   pull_quotes: string[];
+  evidence?: { statement: string; implication: string };
 };
 
 // -- Legacy type (kept for backward compatibility) --
@@ -41,6 +42,8 @@ export type ImplicationItem = {
   description: string;
   impact_level: 'transformative' | 'significant' | 'emerging';
   sector_relevance: string[];
+  source_signal?: string;
+  data_point?: string;
 };
 
 export type EnterpriseItem = {
@@ -48,6 +51,8 @@ export type EnterpriseItem = {
   description: string;
   adoption_stage: 'early' | 'growing' | 'mainstream';
   industry: string;
+  source_signal?: string;
+  data_point?: string;
 };
 
 export type IndustryWatchItem = {
@@ -93,12 +98,29 @@ export type AiNativeOrgLayer = 'strategy' | 'workflow' | 'agent' | 'model' | 'in
 export type AiNativeOrgSignal = {
   headline: string;
   explanation: string;
+  source_signal?: string;
 };
 
 export type AiNativeOrgData = {
   signals: AiNativeOrgSignal[];
   layer_in_focus: AiNativeOrgLayer;
   layer_focus_text: string;
+};
+
+// -- Regional Signals --
+
+export type RegionalSignal = {
+  region: string;
+  signal: string;
+};
+
+export type GlobalLandscapeData = {
+  regions: { name: string; signals: string[] }[];
+};
+
+export type RegionalSignalsData = {
+  implications: RegionalSignal[];
+  enterprise: RegionalSignal[];
 };
 
 // -- Issue --
@@ -128,6 +150,8 @@ export type Issue = {
   executive_briefing_json: ExecutiveTakeawayItem[];
   ai_native_org_json: AiNativeOrgData | null;
   why_this_matters: string | null;
+  global_landscape_json: GlobalLandscapeData | null;
+  regional_signals_json: RegionalSignalsData | null;
   html_snapshot: string | null;
   pdf_url: string | null;
   created_at: string;

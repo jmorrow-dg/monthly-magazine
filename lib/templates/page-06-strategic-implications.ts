@@ -1,5 +1,5 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderBadge, renderCard, renderStrategicPullQuote } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderBadge, renderCard, renderStrategicPullQuote, renderSignalSource, renderDataIndicator, renderRegionalSignals } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { ImplicationsPageData } from '@/lib/types/templates';
 
@@ -10,7 +10,7 @@ const IMPACT_COLORS: Record<string, string> = {
 };
 
 export function renderImplications(data: ImplicationsPageData): string {
-  const items = data.items.slice(0, 4);
+  const items = data.items.slice(0, 3);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -20,7 +20,7 @@ export function renderImplications(data: ImplicationsPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(9)}
+    ${renderMagazineHeader(10)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('strategic-implications', 'Strategic Implications')}
@@ -42,19 +42,25 @@ export function renderImplications(data: ImplicationsPageData): string {
           <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.55; margin-bottom: 8pt;">
             ${escapeHtml(item.description)}
           </p>
-          <div style="display: flex; gap: 5pt; flex-wrap: wrap;">
-            ${item.sector_relevance.map(s => `
-              <span style="font-family: 'Inter', sans-serif; font-size: 6pt; color: ${COLORS.midGrey}; padding: 1.5pt 6pt; border: 0.4pt solid ${COLORS.rule}; border-radius: 2pt; text-transform: uppercase; letter-spacing: 0.3pt;">
-                ${escapeHtml(s)}
-              </span>
-            `).join('')}
+          ${item.data_point ? renderDataIndicator(item.data_point.split(' ').slice(0, 1).join(''), item.data_point.split(' ').slice(1).join(' ')) : ''}
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 4pt; margin-top: ${item.data_point ? '4pt' : '0'};">
+            <div style="display: flex; gap: 5pt; flex-wrap: wrap;">
+              ${item.sector_relevance.map(s => `
+                <span style="font-family: 'Inter', sans-serif; font-size: 6pt; color: ${COLORS.midGrey}; padding: 1.5pt 6pt; border: 0.4pt solid ${COLORS.rule}; border-radius: 2pt; text-transform: uppercase; letter-spacing: 0.3pt;">
+                  ${escapeHtml(s)}
+                </span>
+              `).join('')}
+            </div>
+            ${item.source_signal ? renderSignalSource(item.source_signal) : ''}
           </div>
-        `, { marginBottom: '7pt' });
+        `, { marginBottom: '10pt' });
         return idx === 2 && data.pullQuote ? renderStrategicPullQuote(data.pullQuote) + card : card;
       }).join('')}
+
+      ${data.regionalSignals?.length ? renderRegionalSignals(data.regionalSignals) : ''}
     </div>
 
-    ${renderMagazineFooter(9)}
+    ${renderMagazineFooter(10)}
   </div>
 </body>
 </html>`;

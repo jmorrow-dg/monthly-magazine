@@ -34,7 +34,7 @@ export function renderBriefingPrompts(data: BriefingPromptsPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(12)}
+    ${renderMagazineHeader(16)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('briefing', 'Operator Briefing Prompts')}
@@ -54,7 +54,7 @@ export function renderBriefingPrompts(data: BriefingPromptsPageData): string {
       </div>
     </div>
 
-    ${renderMagazineFooter(12)}
+    ${renderMagazineFooter(16)}
   </div>
 </body>
 </html>`;
