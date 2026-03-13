@@ -326,6 +326,7 @@ export async function createQAReport(report: QAReport): Promise<QAReportRow> {
       selected_references: report.selected_references,
       summary: report.summary,
       passed: report.qa_passed,
+      qa_passed: report.qa_passed,
       threshold_applied: report.threshold_applied,
     })
     .select()

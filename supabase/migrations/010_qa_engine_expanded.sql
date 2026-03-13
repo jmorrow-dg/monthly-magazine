@@ -31,8 +31,15 @@ ALTER TABLE qa_reports ADD COLUMN IF NOT EXISTS numerical_mismatches jsonb DEFAU
 ALTER TABLE qa_reports ADD COLUMN IF NOT EXISTS editorial_flags jsonb DEFAULT '[]';
 ALTER TABLE qa_reports ADD COLUMN IF NOT EXISTS llm_review_findings jsonb DEFAULT '[]';
 ALTER TABLE qa_reports ADD COLUMN IF NOT EXISTS derivative_consistency_findings jsonb DEFAULT '[]';
+ALTER TABLE qa_reports ADD COLUMN IF NOT EXISTS unsupported_claims jsonb DEFAULT '[]';
 ALTER TABLE qa_reports ADD COLUMN IF NOT EXISTS selected_references jsonb DEFAULT '[]';
 ALTER TABLE qa_reports ADD COLUMN IF NOT EXISTS summary text;
+
+-- Add qa_passed as proper column (migration 009 used 'passed'; keep both for compat)
+ALTER TABLE qa_reports ADD COLUMN IF NOT EXISTS qa_passed boolean;
+
+-- Backfill qa_passed from legacy passed column
+UPDATE qa_reports SET qa_passed = passed WHERE qa_passed IS NULL AND passed IS NOT NULL;
 
 -- Rename existing columns for backward compatibility
 -- The original 009 migration created: violations jsonb, claims jsonb
