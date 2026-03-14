@@ -84,25 +84,28 @@ export default function IssueListPage() {
           <table className="w-full">
             <thead>
               <tr className="text-left text-[11px] text-[#888888] uppercase tracking-wider border-b border-[#333333]">
-                <th className="px-5 py-3">Edition</th>
-                <th className="px-5 py-3">Period</th>
-                <th className="px-5 py-3">Headline</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3">Updated</th>
+                <th className="px-4 py-3">Edition</th>
+                <th className="px-4 py-3">Period</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Headline</th>
+                <th className="px-4 py-3 text-right">Updated</th>
               </tr>
             </thead>
             <tbody>
-              {issues.map((issue) => (
+              {issues.map((issue, idx) => (
                 <tr key={issue.id} className="border-t border-[#2a2a2a] hover:bg-[#1C1C1C] transition-colors">
-                  <td className="px-5 py-3">
-                    <Link href={`/admin/issues/${issue.id}`} className="text-[#B8860B] font-semibold text-sm hover:underline">
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/issues/${issue.id}`} className="text-[#B8860B] font-semibold text-sm hover:underline inline-flex items-center gap-2">
                       #{String(issue.edition).padStart(2, '0')}
+                      {idx === 0 && filter === 'all' && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#B8860B]/10 text-[#B8860B] uppercase tracking-wider font-medium">Latest</span>
+                      )}
                     </Link>
                   </td>
-                  <td className="px-5 py-3 text-sm text-[#B0B0B0]">{shortMonthName(issue.month)} {issue.year}</td>
-                  <td className="px-5 py-3 text-sm text-white">{issue.cover_headline}</td>
-                  <td className="px-5 py-3"><IssueStatusBadge status={issue.status} /></td>
-                  <td className="px-5 py-3 text-xs text-[#666666]">{new Date(issue.updated_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm text-[#B0B0B0] whitespace-nowrap">{shortMonthName(issue.month)} {issue.year}</td>
+                  <td className="px-4 py-3"><IssueStatusBadge status={issue.status} /></td>
+                  <td className="px-4 py-3 text-sm text-white max-w-[300px] truncate">{issue.cover_headline}</td>
+                  <td className="px-4 py-3 text-xs text-[#666666] text-right whitespace-nowrap">{new Date(issue.updated_at).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
