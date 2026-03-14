@@ -1,5 +1,5 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderBadge, renderCard, renderStrategicPullQuote, renderSignalSource, renderDataIndicator, renderRegionalSignals } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderBadge, renderCard, renderStrategicPullQuote, renderCitationMark, renderDataIndicator, renderRegionalSignals, buildCitations } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { EnterprisePageData } from '@/lib/types/templates';
 
@@ -11,6 +11,7 @@ const STAGE_COLORS: Record<string, string> = {
 
 export function renderEnterprise(data: EnterprisePageData): string {
   const items = data.items.slice(0, 3);
+  const { marks, footer } = buildCitations(items);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -32,11 +33,12 @@ export function renderEnterprise(data: EnterprisePageData): string {
 
       ${items.map((item, idx) => {
         const stageColor = STAGE_COLORS[item.adoption_stage] || COLORS.midGrey;
+        const citeMark = marks.has(idx) ? renderCitationMark(marks.get(idx)!) : '';
         const quote = idx === 2 && data.pullQuote ? renderStrategicPullQuote(data.pullQuote) : '';
         return quote + renderCard(`
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6pt;">
             <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 9.5pt; color: ${COLORS.white}; flex: 1; margin-right: 8pt; line-height: 1.3;">
-              ${escapeHtml(item.title)}
+              ${escapeHtml(item.title)}${citeMark}
             </div>
             <div style="display: flex; gap: 4pt; align-items: center; flex-shrink: 0;">
               ${renderBadge(item.adoption_stage, stageColor)}
@@ -50,7 +52,6 @@ export function renderEnterprise(data: EnterprisePageData): string {
             <div style="font-family: 'Inter', sans-serif; font-size: 6.5pt; color: ${COLORS.darkGrey}; text-transform: uppercase; letter-spacing: 0.5pt;">
               ${escapeHtml(item.industry)}
             </div>
-            ${item.source_signal ? renderSignalSource(item.source_signal) : ''}
           </div>
         `, { marginBottom: '10pt' });
       }).join('')}
@@ -58,6 +59,7 @@ export function renderEnterprise(data: EnterprisePageData): string {
       ${data.regionalSignals?.length ? renderRegionalSignals(data.regionalSignals) : ''}
     </div>
 
+    ${footer}
     ${renderMagazineFooter(14)}
   </div>
 </body>

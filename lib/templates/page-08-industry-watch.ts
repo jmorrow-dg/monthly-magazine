@@ -1,5 +1,5 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderSectionTitle, renderBadge, renderCard } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderSectionTitle, renderBadge, renderCard, renderCitationMark, buildCitations } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { IndustryWatchPageData } from '@/lib/types/templates';
 
@@ -12,6 +12,7 @@ const TREND_COLORS: Record<string, string> = {
 
 export function renderIndustryWatch(data: IndustryWatchPageData): string {
   const items = data.items.slice(0, 4);
+  const { marks, footer } = buildCitations(items);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -28,14 +29,15 @@ export function renderIndustryWatch(data: IndustryWatchPageData): string {
 
       ${renderSectionTitle('Industry Watch', 'Sector-specific trends and movements shaping AI adoption.')}
 
-      ${items.map((item) => {
+      ${items.map((item, idx) => {
         const trendColor = TREND_COLORS[item.trend_direction] || COLORS.midGrey;
+        const citeMark = marks.has(idx) ? renderCitationMark(marks.get(idx)!) : '';
         return renderCard(`
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6pt;">
             <div style="display: flex; align-items: center; gap: 8pt; flex: 1; margin-right: 8pt;">
               ${renderBadge(item.industry, '#3B82F6')}
               <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 9pt; color: ${COLORS.white}; line-height: 1.3;">
-                ${escapeHtml(item.headline)}
+                ${escapeHtml(item.headline)}${citeMark}
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 4pt; flex-shrink: 0;">
@@ -52,6 +54,7 @@ export function renderIndustryWatch(data: IndustryWatchPageData): string {
       }).join('')}
     </div>
 
+    ${footer}
     ${renderMagazineFooter(17)}
   </div>
 </body>

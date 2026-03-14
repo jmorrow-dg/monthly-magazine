@@ -173,13 +173,13 @@ export function renderIndustryWatchBox(industry: string, text: string): string {
 /**
  * Strategic Signal callout card.
  */
-export function renderStrategicSignalBox(signal: string, context: string, implication: string): string {
+export function renderStrategicSignalBox(signal: string, context: string, implication: string, citationMark?: string): string {
   return renderCard(`
     <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 6.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1pt; margin-bottom: 6pt;">
       Strategic Signal
     </div>
     <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 9.5pt; color: ${COLORS.white}; line-height: 1.3; margin-bottom: 6pt;">
-      ${escapeHtml(signal)}
+      ${escapeHtml(signal)}${citationMark || ''}
     </div>
     <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.55; margin-bottom: 6pt;">
       ${escapeHtml(context)}
@@ -293,6 +293,60 @@ export function renderSignalSource(source: string): string {
       </span>
     </div>
   `;
+}
+
+/**
+ * Inline superscript citation number.
+ * Renders a small gold superscript number that visually references a footnote.
+ */
+export function renderCitationMark(index: number): string {
+  return `<sup style="font-family: 'Inter', sans-serif; font-size: 5.5pt; color: ${COLORS.gold}; font-weight: 600; margin-left: 1pt; vertical-align: super; line-height: 0; cursor: default;">${index}</sup>`;
+}
+
+/**
+ * Citation footnotes block for the bottom of a page.
+ * Renders a compact list of numbered source references.
+ * Positioned absolutely at the bottom of the page content area.
+ */
+export function renderCitationFooter(sources: { index: number; source: string }[]): string {
+  if (sources.length === 0) return '';
+  return `
+    <div style="position: absolute; bottom: 30pt; left: 34pt; right: 34pt; border-top: 0.4pt solid ${COLORS.rule}; padding-top: 6pt;">
+      <div style="display: flex; flex-wrap: wrap; gap: 4pt 16pt;">
+        ${sources.map(s => `
+          <div style="display: flex; align-items: baseline; gap: 3pt;">
+            <span style="font-family: 'Inter', sans-serif; font-size: 5pt; color: ${COLORS.gold}; font-weight: 600; flex-shrink: 0;">${s.index}</span>
+            <span style="font-family: 'Inter', sans-serif; font-size: 5.5pt; color: ${COLORS.darkGrey}; line-height: 1.3;">${escapeHtml(s.source)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Helper: collect source_signal values from items and build citation data.
+ * Returns { marks: Map<index, citationNumber>, footer: rendered HTML }.
+ * Only items with a truthy source_signal get a citation.
+ */
+export function buildCitations(items: { source_signal?: string }[]): {
+  marks: Map<number, number>;
+  sources: { index: number; source: string }[];
+  footer: string;
+} {
+  const marks = new Map<number, number>();
+  const sources: { index: number; source: string }[] = [];
+  let citationNum = 1;
+
+  items.forEach((item, idx) => {
+    if (item.source_signal) {
+      marks.set(idx, citationNum);
+      sources.push({ index: citationNum, source: item.source_signal });
+      citationNum++;
+    }
+  });
+
+  return { marks, sources, footer: renderCitationFooter(sources) };
 }
 
 /**

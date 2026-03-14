@@ -1,23 +1,26 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderIconLabel } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderCitationMark, buildCitations } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { ExecutiveBriefingPageData } from '@/lib/types/templates';
 
 export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string {
   const items = data.items.slice(0, 5);
+  const { marks, footer } = buildCitations(items);
 
   // Split into two columns: 3 left, 2 right
   const leftItems = items.slice(0, 3);
   const rightItems = items.slice(3, 5);
 
-  const renderTakeawayCard = (item: { headline: string; explanation: string }, idx: number): string => `
+  const renderTakeawayCard = (item: { headline: string; explanation: string; source_signal?: string }, idx: number): string => {
+    const citeMark = marks.has(idx) ? renderCitationMark(marks.get(idx)!) : '';
+    return `
     <div style="background: ${COLORS.card}; border: 0.4pt solid ${COLORS.rule}; border-radius: 5pt; padding: 14pt 16pt; margin-bottom: 8pt; overflow: hidden; word-wrap: break-word; overflow-wrap: break-word;">
       <div style="display: flex; align-items: flex-start; gap: 8pt; margin-bottom: 8pt;">
         <div style="width: 20pt; height: 20pt; border-radius: 3pt; background: rgba(184,134,11,0.08); border: 0.4pt solid ${COLORS.gold}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
           <span style="font-family: 'Inter', sans-serif; font-size: 8pt; font-weight: 700; color: ${COLORS.gold};">${String(idx + 1).padStart(2, '0')}</span>
         </div>
         <div style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 10pt; color: ${COLORS.white}; line-height: 1.3; flex: 1;">
-          ${escapeHtml(item.headline)}
+          ${escapeHtml(item.headline)}${citeMark}
         </div>
       </div>
       <p style="font-family: 'Inter', sans-serif; font-size: 8pt; color: ${COLORS.lightGrey}; line-height: 1.6; margin: 0;">
@@ -25,6 +28,7 @@ export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string
       </p>
     </div>
   `;
+  };
 
   // Cover story connector for the bottom-right space
   const coverConnector = data.coverHeadline ? `
@@ -80,6 +84,7 @@ export function renderExecutiveBriefing(data: ExecutiveBriefingPageData): string
       </div>
     </div>
 
+    ${footer}
     ${renderMagazineFooter(3)}
   </div>
 </body>

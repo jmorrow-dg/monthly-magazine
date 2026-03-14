@@ -1,10 +1,11 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderCard } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderCard, renderCitationMark, buildCitations } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { ToolsPageData } from '@/lib/types/templates';
 
 export function renderTools(data: ToolsPageData): string {
   const items = data.items.slice(0, 6);
+  const { marks, footer } = buildCitations(items);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -25,9 +26,11 @@ export function renderTools(data: ToolsPageData): string {
       <div style="width: 40pt; height: 2pt; background: ${COLORS.gold}; border-radius: 1pt; margin-bottom: 14pt;"></div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 7pt;">
-        ${items.map((item) => renderCard(`
+        ${items.map((item, idx) => {
+          const citeMark = marks.has(idx) ? renderCitationMark(marks.get(idx)!) : '';
+          return renderCard(`
           <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 9pt; color: ${COLORS.white}; margin-bottom: 3pt; line-height: 1.3;">
-            ${escapeHtml(item.name)}
+            ${escapeHtml(item.name)}${citeMark}
           </div>
           <div style="font-family: 'Inter', sans-serif; font-size: 6pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 0.5pt; margin-bottom: 6pt;">
             ${escapeHtml(item.category)}
@@ -40,10 +43,12 @@ export function renderTools(data: ToolsPageData): string {
               ${escapeHtml(item.verdict)}
             </span>
           </div>
-        `, { padding: '10pt 12pt', marginBottom: '0' })).join('')}
+        `, { padding: '10pt 12pt', marginBottom: '0' });
+        }).join('')}
       </div>
     </div>
 
+    ${footer}
     ${renderMagazineFooter(18)}
   </div>
 </body>

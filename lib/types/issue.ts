@@ -62,6 +62,7 @@ export type IndustryWatchItem = {
   headline: string;
   description: string;
   trend_direction: 'accelerating' | 'emerging' | 'stabilising' | 'declining';
+  source_signal?: string;
 };
 
 export type ToolItem = {
@@ -70,6 +71,7 @@ export type ToolItem = {
   category: string;
   url?: string;
   verdict: string;
+  source_signal?: string;
 };
 
 export type PlaybookItem = {
@@ -77,22 +79,26 @@ export type PlaybookItem = {
   context: string;
   steps: string[];
   outcome: string;
+  source_signal?: string;
 };
 
 export type StrategicSignalItem = {
   signal: string;
   context: string;
   implication: string;
+  source_signal?: string;
 };
 
 export type BriefingPromptItem = {
   question: string;
   explanation: string;
+  source_signal?: string;
 };
 
 export type ExecutiveTakeawayItem = {
   headline: string;
   explanation: string;
+  source_signal?: string;
 };
 
 export type AiNativeOrgLayer = 'strategy' | 'workflow' | 'agent' | 'model' | 'infrastructure';

@@ -283,7 +283,8 @@ Return a JSON array of 4-6 items:
   "industry": "string (specific industry sector)",
   "headline": "string (max 15 words)",
   "description": "string (max 80 words)",
-  "trend_direction": "accelerating" | "emerging" | "stabilising" | "declining"
+  "trend_direction": "accelerating" | "emerging" | "stabilising" | "declining",
+  "source_signal": "string (concise signal source, max 10 words, e.g. 'Healthcare AI deployment surveys, Q1 2026')"
 }]
 
 Return ONLY the JSON array.`;
@@ -315,7 +316,8 @@ Return a JSON array of exactly 6 items:
   "description": "string (max 40 words)",
   "category": "string (e.g. Productivity, Analytics, Automation, etc.)",
   "url": "string (URL if known, otherwise empty string)",
-  "verdict": "string (max 25 words, concise assessment)"
+  "verdict": "string (max 25 words, concise assessment)",
+  "source_signal": "string (concise signal source, max 10 words, e.g. 'Product launch announcements, March 2026')"
 }]
 
 Return ONLY the JSON array.`;
@@ -354,7 +356,8 @@ Return a JSON array of exactly 4 items:
   "title": "string (max 15 words, action-oriented)",
   "context": "string (max 30 words)",
   "steps": ["string array, 3-5 steps, each max 15 words"],
-  "outcome": "string (max 20 words)"
+  "outcome": "string (max 20 words)",
+  "source_signal": "string (concise signal source, max 10 words, e.g. 'Enterprise AI adoption patterns, 2026')"
 }]
 
 Return ONLY the JSON array.`;
@@ -390,7 +393,8 @@ Return a JSON array of 4-6 items:
 [{
   "signal": "string (max 15 words, the signal being observed)",
   "context": "string (max 40 words, why this signal matters)",
-  "implication": "string (max 40 words, what operators should consider)"
+  "implication": "string (max 40 words, what operators should consider)",
+  "source_signal": "string (concise signal source, max 10 words, e.g. 'AI lab research publications, Q1 2026')"
 }]
 
 Return ONLY the JSON array.`;
@@ -480,7 +484,8 @@ Requirements:
 Return a JSON array of exactly 6 items:
 [{
   "question": "string (a strategic question for leadership discussion)",
-  "explanation": "string (max 60 words, why this question matters and what to consider)"
+  "explanation": "string (max 60 words, why this question matters and what to consider)",
+  "source_signal": "string (concise signal source, max 10 words, e.g. 'Leadership strategy research, Q1 2026')"
 }]
 
 Return ONLY the JSON array.`;
@@ -528,7 +533,8 @@ Requirements:
 Return a JSON array of exactly 5 items:
 [{
   "headline": "string (max 10 words, clear strategic insight)",
-  "explanation": "string (max 60 words, strategic significance and context)"
+  "explanation": "string (max 60 words, strategic significance and context)",
+  "source_signal": "string (concise signal source, max 10 words, e.g. 'Enterprise AI market analysis, 2026')"
 }]
 
 Return ONLY the JSON array.`;

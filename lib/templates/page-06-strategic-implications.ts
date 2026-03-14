@@ -1,5 +1,5 @@
 import { BASE_STYLES, COLORS } from './shared/styles';
-import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderBadge, renderCard, renderStrategicPullQuote, renderSignalSource, renderDataIndicator, renderRegionalSignals } from './shared/components';
+import { renderMagazineHeader, renderMagazineFooter, renderIconLabel, renderBadge, renderCard, renderStrategicPullQuote, renderCitationMark, renderCitationFooter, renderDataIndicator, renderRegionalSignals, buildCitations } from './shared/components';
 import { escapeHtml } from '@/lib/utils/escape-html';
 import type { ImplicationsPageData } from '@/lib/types/templates';
 
@@ -11,6 +11,7 @@ const IMPACT_COLORS: Record<string, string> = {
 
 export function renderImplications(data: ImplicationsPageData): string {
   const items = data.items.slice(0, 3);
+  const { marks, footer } = buildCitations(items);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -32,10 +33,11 @@ export function renderImplications(data: ImplicationsPageData): string {
 
       ${items.map((item, idx) => {
         const impactColor = IMPACT_COLORS[item.impact_level] || COLORS.midGrey;
+        const citeMark = marks.has(idx) ? renderCitationMark(marks.get(idx)!) : '';
         const card = renderCard(`
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6pt;">
             <div style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 9.5pt; color: ${COLORS.white}; flex: 1; margin-right: 8pt; line-height: 1.3;">
-              ${escapeHtml(item.title)}
+              ${escapeHtml(item.title)}${citeMark}
             </div>
             ${renderBadge(item.impact_level, impactColor)}
           </div>
@@ -51,7 +53,6 @@ export function renderImplications(data: ImplicationsPageData): string {
                 </span>
               `).join('')}
             </div>
-            ${item.source_signal ? renderSignalSource(item.source_signal) : ''}
           </div>
         `, { marginBottom: '10pt' });
         return idx === 2 && data.pullQuote ? renderStrategicPullQuote(data.pullQuote) + card : card;
@@ -60,6 +61,7 @@ export function renderImplications(data: ImplicationsPageData): string {
       ${data.regionalSignals?.length ? renderRegionalSignals(data.regionalSignals) : ''}
     </div>
 
+    ${footer}
     ${renderMagazineFooter(10)}
   </div>
 </body>
