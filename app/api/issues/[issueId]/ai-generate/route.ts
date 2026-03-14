@@ -23,6 +23,12 @@ import { fetchMonthlySignals } from '@/lib/intelligence/fetch-signals';
 import { fetchMonthlyClusters, findCoverStoryCluster } from '@/lib/intelligence/fetch-clusters';
 import { fetchMonthlyTrends, findTopTrend } from '@/lib/intelligence/fetch-trends';
 import type { SignalContext } from '@/lib/intelligence/types';
+import { buildEvidencePipeline } from '@/lib/evidence/build-evidence-pipeline';
+import type { EvidencePackBundle, MagazineSectionName, SectionEvidencePack } from '@/lib/types/evidence';
+import { extractAndStoreFacts } from '@/lib/evidence/extract-facts';
+import { buildSectionEvidencePacksFromFacts, storeEvidencePacks } from '@/lib/evidence/build-section-evidence-packs';
+import { storeSectionProvenance } from '@/lib/evidence/section-provenance';
+import { extractAndStoreClaims } from '@/lib/evidence/extract-and-store-claims';
 import { runIssueQA } from '@/lib/qa/run-issue-qa';
 import { createQAReport } from '@/lib/supabase/queries';
 import type { Issue } from '@/lib/types/issue';
@@ -60,6 +66,7 @@ export async function POST(request: Request, context: RouteContext) {
     let sourceSignalIds: string[] | undefined;
     let sourceClusterIds: string[] | undefined;
     let sourceTrendIds: string[] | undefined;
+    let evidenceBundle: EvidencePackBundle | undefined;
 
     if (mode === 'signals') {
       const { monthYear } = body as { monthYear: string };
@@ -88,8 +95,7 @@ export async function POST(request: Request, context: RouteContext) {
       const coverCluster = findCoverStoryCluster(clusterResponse.clusters || []);
       const topTrend = findTopTrend(trendResponse.trends || []);
 
-      // Build signal context for generation functions
-      // Prefer trend data over cluster data when available (richer context)
+      // Build signal context for generation functions (fallback when no evidence pack)
       signalContext = {
         signals: signalFeed.signals.map((s) => ({
           title: s.title,
@@ -134,6 +140,33 @@ export async function POST(request: Request, context: RouteContext) {
       sourceClusterIds = (clusterResponse.clusters || []).map((c) => c.id);
       sourceTrendIds = (trendResponse.trends || []).map((t) => t.id);
 
+      // Build evidence pipeline (section-specific evidence packs)
+      try {
+        evidenceBundle = await buildEvidencePipeline(
+          signalFeed.signals,
+          clusterResponse.clusters || [],
+          trendResponse.trends || [],
+          issueId,
+          monthYear,
+        );
+        console.log(`Evidence pipeline completed in ${evidenceBundle.pipeline_duration_ms}ms`);
+      } catch (evidenceError) {
+        console.error('Evidence pipeline failed (falling back to signal context):', evidenceError);
+        // Continue without evidence packs; generation functions will use signalContext
+      }
+
+      // Phase 5: Extract and store evidence facts (non-fatal)
+      try {
+        const storedFacts = await extractAndStoreFacts(signalFeed.signals);
+        if (storedFacts.length > 0) {
+          const packPayloads = buildSectionEvidencePacksFromFacts(storedFacts, issueId);
+          await storeEvidencePacks(issueId, packPayloads);
+          console.log(`Phase 5: stored ${storedFacts.length} evidence facts and ${packPayloads.length} section packs`);
+        }
+      } catch (phase5Error) {
+        console.error('Phase 5 evidence fact extraction failed (non-fatal):', phase5Error);
+      }
+
       // Use source URLs as fallback sources array (for any functions that need it)
       sources = signalFeed.signals
         .filter((s): s is typeof s & { source_url: string } => !!s.source_url)
@@ -147,28 +180,32 @@ export async function POST(request: Request, context: RouteContext) {
       sources = rawSources;
     }
 
+    // Helper to get section-specific evidence pack
+    const getPack = (section: MagazineSectionName): SectionEvidencePack | undefined =>
+      evidenceBundle?.section_packs[section];
+
     // Step 1: Generate cover story first (everything else depends on it)
-    const coverStory = await generateCoverStory(sources, instructions, signalContext);
+    const coverStory = await generateCoverStory(sources, instructions, signalContext, getPack('cover_story'));
 
     // Step 2: Generate implications, enterprise, industry watch, and tools in parallel
     const [implications, enterprise, industryWatch, tools] = await Promise.all([
-      generateImplications(coverStory, instructions, signalContext),
-      generateEnterprise(coverStory, instructions, signalContext),
-      generateIndustryWatch(sources, coverStory, instructions, signalContext),
-      generateTools(sources, instructions, signalContext),
+      generateImplications(coverStory, instructions, signalContext, getPack('implications')),
+      generateEnterprise(coverStory, instructions, signalContext, getPack('enterprise')),
+      generateIndustryWatch(sources, coverStory, instructions, signalContext, getPack('industry_watch')),
+      generateTools(sources, instructions, signalContext, getPack('tools')),
     ]);
 
     // Step 3: Generate remaining sections in parallel
     const [playbooks, strategicSignals, briefingPrompts, executiveBriefing, aiNativeOrg, editorial, whyThisMatters, regionalSignals, globalLandscape] = await Promise.all([
-      generatePlaybooks(coverStory, instructions, signalContext),
-      generateStrategicSignals(coverStory, implications, instructions, signalContext),
-      generateBriefingPrompts(coverStory, implications, instructions, signalContext),
-      generateExecutiveBriefing(coverStory, implications, instructions, signalContext),
-      generateAiNativeOrg(coverStory, implications, issue.edition, instructions, signalContext),
-      generateEditorial(coverStory, implications, monthName(issue.month), issue.edition, instructions, signalContext),
-      generateWhyThisMatters(coverStory, implications, instructions, signalContext),
-      generateRegionalSignals(coverStory, implications.map(i => i.title).join(', '), instructions, signalContext),
-      generateGlobalLandscape(coverStory, instructions, signalContext),
+      generatePlaybooks(coverStory, instructions, signalContext, getPack('playbooks')),
+      generateStrategicSignals(coverStory, implications, instructions, signalContext, getPack('strategic_signals')),
+      generateBriefingPrompts(coverStory, implications, instructions, signalContext, getPack('briefing_prompts')),
+      generateExecutiveBriefing(coverStory, implications, instructions, signalContext, getPack('executive_briefing')),
+      generateAiNativeOrg(coverStory, implications, issue.edition, instructions, signalContext, getPack('ai_native_org')),
+      generateEditorial(coverStory, implications, monthName(issue.month), issue.edition, instructions, signalContext, getPack('editorial')),
+      generateWhyThisMatters(coverStory, implications, instructions, signalContext, getPack('why_this_matters')),
+      generateRegionalSignals(coverStory, implications.map(i => i.title).join(', '), instructions, signalContext, getPack('regional_signals')),
+      generateGlobalLandscape(coverStory, instructions, signalContext, getPack('global_landscape')),
     ]);
 
     // Post-generation: sanitise all dash characters and save
@@ -195,11 +232,26 @@ export async function POST(request: Request, context: RouteContext) {
       updateData.source_signal_ids = sourceSignalIds;
       updateData.source_cluster_ids = sourceClusterIds;
       updateData.source_trend_ids = sourceTrendIds;
+      // Store evidence bundle for provenance and QA
+      if (evidenceBundle) {
+        updateData.evidence_pack_bundle = evidenceBundle;
+      }
     } else {
       updateData.generation_mode = 'sources';
     }
 
     const updated = await updateIssue(issueId, updateData);
+
+    // Phase 5: Post-generation claim extraction and provenance (non-fatal)
+    if (mode === 'signals' && updated) {
+      try {
+        await extractAndStoreClaims(issueId, updated);
+        await storeSectionProvenance(issueId, evidenceBundle);
+        console.log('Phase 5: stored claims and provenance');
+      } catch (phase5PostError) {
+        console.error('Phase 5 post-generation failed (non-fatal):', phase5PostError);
+      }
+    }
 
     // Auto-trigger QA pipeline (non-fatal)
     let qaReport = null;

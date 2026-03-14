@@ -11,6 +11,7 @@ import ContentIndicator from '@/components/admin/ContentIndicator';
 import SectionReadiness, { computeArrayReadiness } from '@/components/admin/SectionReadiness';
 import AIGeneratePanel from '@/components/admin/AIGeneratePanel';
 import QAPanel from '@/components/admin/QAPanel';
+import EvidencePanel from '@/components/admin/EvidencePanel';
 import DistributeButton from '@/components/admin/DistributeButton';
 import { INLINE_LIMITS, CONTENT_LIMITS } from '@/lib/constants/content-limits';
 import { monthName } from '@/lib/utils/format-date';
@@ -289,6 +290,12 @@ export default function IssueEditorPage() {
             target="_blank"
           >
             Preview
+          </Link>
+          <Link
+            href={`/admin/issues/${issueId}/intelligence`}
+            className="px-4 py-2 bg-[#222222] border border-[#333333] text-[#B8860B] text-sm font-medium rounded-lg hover:border-[#B8860B] transition-colors"
+          >
+            Intelligence
           </Link>
           <DownloadButton
             issueId={issueId}
@@ -652,6 +659,9 @@ export default function IssueEditorPage() {
               onQAComplete={loadIssue}
             />
           </div>
+
+          {/* Evidence Engine */}
+          <EvidencePanel evidenceBundle={issue.evidence_pack_bundle ?? null} />
 
           {/* Info */}
           <div className="bg-[#222222] border border-[#333333] rounded-lg p-4 mt-4">

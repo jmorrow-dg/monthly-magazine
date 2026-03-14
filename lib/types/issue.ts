@@ -1,3 +1,5 @@
+import type { EvidencePackBundle } from '@/lib/types/evidence';
+
 export type IssueStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived';
 
 export type PageType = 'cover' | 'editorial' | 'cover-story-intro' | 'cover-story-analysis'
@@ -188,6 +190,8 @@ export type Issue = {
   qa_summary: string | null;
   qa_override: boolean | null;
   qa_override_reason: string | null;
+  // Evidence Engine
+  evidence_pack_bundle: EvidencePackBundle | null;
   // Timestamps
   created_at: string;
   updated_at: string;

@@ -29,9 +29,32 @@ import { sanitiseDashes } from '@/lib/utils/sanitise-dashes';
 
 type RouteContext = { params: Promise<{ issueId: string }> };
 
+// In-memory render cache. Draft pages expire after 30s so edits appear quickly.
+// Published pages are cached indefinitely (server restart clears).
+const renderCache = new Map<string, { body: object; status: string; ts: number }>();
+const DRAFT_TTL_MS = 30_000;
+
 export async function GET(request: Request, context: RouteContext) {
   try {
     const { issueId } = await context.params;
+
+    // Check in-memory cache first (skip for partial ?pages= requests)
+    const { searchParams } = new URL(request.url);
+    const pagesParam = searchParams.get('pages');
+    const cached = renderCache.get(issueId);
+    if (cached && !pagesParam) {
+      const stale = cached.status !== 'published' && Date.now() - cached.ts > DRAFT_TTL_MS;
+      if (!stale) {
+        const cacheControl =
+          cached.status === 'published'
+            ? 'public, max-age=3600, stale-while-revalidate=86400'
+            : 'private, max-age=5, stale-while-revalidate=30';
+        return NextResponse.json(cached.body, {
+          headers: { 'Cache-Control': cacheControl, 'X-Render-Cache': 'HIT' },
+        });
+      }
+    }
+
     const issue = await getIssue(issueId);
 
     if (!issue) {
@@ -98,22 +121,34 @@ export async function GET(request: Request, context: RouteContext) {
     const cleanPages = pages.map((html) => sanitiseDashes(html));
 
     // Support ?pages=1 or ?pages=1,2 to return only specific pages
-    const { searchParams } = new URL(request.url);
-    const pagesParam = searchParams.get('pages');
-
     if (pagesParam) {
       const requested = pagesParam.split(',').map(Number);
       const filtered = requested.map((p) => cleanPages[p - 1] || null);
       return NextResponse.json({ pages: filtered });
     }
 
-    return NextResponse.json({
+    const body = {
       pages: cleanPages,
       issue: {
         headline: issue.cover_headline,
         subtitle: issue.cover_subtitle,
         status: issue.status,
       },
+    };
+
+    // Store in memory cache
+    renderCache.set(issueId, { body, status: issue.status, ts: Date.now() });
+
+    // Published issues are immutable: cache aggressively at browser + CDN level.
+    // Draft/review issues get a short stale-while-revalidate window so edits
+    // show up quickly but repeat loads within a few seconds hit the cache.
+    const cacheControl =
+      issue.status === 'published'
+        ? 'public, max-age=3600, stale-while-revalidate=86400'
+        : 'private, max-age=5, stale-while-revalidate=30';
+
+    return NextResponse.json(body, {
+      headers: { 'Cache-Control': cacheControl, 'X-Render-Cache': 'MISS' },
     });
   } catch (error) {
     console.error('Failed to render issue:', error);

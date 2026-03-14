@@ -3,9 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { SPREAD_LAYOUT, PAGE_LABELS } from '@/lib/types/magazine';
 
-const A4_W = 794;
-const A4_H = 1123;
-
 type Props = {
   pageHtmls: (string | null)[];
   currentSpread: number;
@@ -21,6 +18,32 @@ function getSpreadForPage(pageNumber: number): number {
   );
 }
 
+/**
+ * Lightweight page thumbnail: a coloured block with the page number.
+ * Replaces the previous approach of rendering a full iframe per thumbnail,
+ * cutting DOM weight from ~16 iframes to zero.
+ */
+function PageThumb({ pageIndex, isActive }: { pageIndex: number; isActive: boolean }) {
+  const THUMB_W = 56;
+  const THUMB_H = 79;
+
+  // First page (cover) gets a dark bg, others get a subtly different shade
+  const bgColor = pageIndex === 0 ? '#1a1a1a' : '#222222';
+
+  return (
+    <div
+      className={`overflow-hidden rounded border flex items-center justify-center ${
+        isActive ? 'border-[#B8860B] ring-1 ring-[#B8860B]' : 'border-[#333333]'
+      }`}
+      style={{ width: THUMB_W, height: THUMB_H, backgroundColor: bgColor }}
+    >
+      <span className={`text-[10px] font-medium ${isActive ? 'text-[#B8860B]' : 'text-[#555555]'}`}>
+        {pageIndex + 1}
+      </span>
+    </div>
+  );
+}
+
 export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, isOpen, onClose, isMobile }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -33,10 +56,6 @@ export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, 
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-
-  const THUMB_W = 56;
-  const THUMB_H = 79;
-  const thumbScale = THUMB_H / A4_H;
 
   if (isMobile) {
     return (
@@ -62,14 +81,7 @@ export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, 
                     onClick={() => { onNavigate(spreadIdx); onClose(); }}
                     className="text-center"
                   >
-                    <div
-                      className={`overflow-hidden rounded border ${isActive ? 'border-[#B8860B] ring-1 ring-[#B8860B]' : 'border-[#333333]'}`}
-                      style={{ width: THUMB_W, height: THUMB_H }}
-                    >
-                      <div style={{ width: A4_W, height: A4_H, transform: `scale(${thumbScale})`, transformOrigin: 'top left' }}>
-                        <iframe srcDoc={html} className="border-0 pointer-events-none" style={{ width: A4_W, height: A4_H }} sandbox="allow-same-origin" tabIndex={-1} />
-                      </div>
-                    </div>
+                    <PageThumb pageIndex={i} isActive={isActive} />
                     <div className={`text-[8px] mt-1 leading-tight ${isActive ? 'text-[#B8860B]' : 'text-[#888888]'}`}>
                       {PAGE_LABELS[i]}
                     </div>
@@ -108,14 +120,7 @@ export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, 
                   isActive ? 'bg-[#B8860B]/10 border border-[#B8860B]/30' : 'hover:bg-[#222222] border border-transparent'
                 }`}
               >
-                <div
-                  className={`overflow-hidden rounded border flex-shrink-0 ${isActive ? 'border-[#B8860B]' : 'border-[#333333]'}`}
-                  style={{ width: THUMB_W, height: THUMB_H }}
-                >
-                  <div style={{ width: A4_W, height: A4_H, transform: `scale(${thumbScale})`, transformOrigin: 'top left' }}>
-                    <iframe srcDoc={html} className="border-0 pointer-events-none" style={{ width: A4_W, height: A4_H }} sandbox="allow-same-origin" tabIndex={-1} />
-                  </div>
-                </div>
+                <PageThumb pageIndex={i} isActive={isActive} />
                 <div className="text-left min-w-0">
                   <div className={`text-xs font-medium truncate ${isActive ? 'text-[#B8860B]' : 'text-white'}`}>
                     {PAGE_LABELS[i]}

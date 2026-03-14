@@ -11,6 +11,7 @@ import type {
   SupportStatus,
 } from '../types/qa';
 import type { ExtractedClaim } from './extract-claims';
+import type { EvidencePackBundle, EvidenceFact, MagazineSectionName } from '@/lib/types/evidence';
 
 export interface GroundingResult {
   citation_map: ClaimReference[];
@@ -227,3 +228,275 @@ const STOP_WORDS = new Set([
   'which', 'their', 'would', 'there', 'could', 'other', 'these', 'where',
   'being', 'each', 'some', 'them', 'then', 'does', 'should',
 ]);
+
+// ── Evidence-Based Grounding ────────────────────────────────
+
+/**
+ * Section name mapping for QA claim sections to evidence pack section names.
+ * QA sections use display names; evidence packs use snake_case.
+ */
+const QA_SECTION_TO_EVIDENCE: Record<string, MagazineSectionName> = {
+  'Cover Story': 'cover_story',
+  'cover_story': 'cover_story',
+  'Implications': 'implications',
+  'implications': 'implications',
+  'Enterprise': 'enterprise',
+  'enterprise': 'enterprise',
+  'Industry Watch': 'industry_watch',
+  'industry_watch': 'industry_watch',
+  'Tools': 'tools',
+  'tools': 'tools',
+  'Playbooks': 'playbooks',
+  'playbooks': 'playbooks',
+  'Strategic Signals': 'strategic_signals',
+  'strategic_signals': 'strategic_signals',
+  'Briefing Prompts': 'briefing_prompts',
+  'briefing_prompts': 'briefing_prompts',
+  'Executive Briefing': 'executive_briefing',
+  'executive_briefing': 'executive_briefing',
+  'AI Native Org': 'ai_native_org',
+  'ai_native_org': 'ai_native_org',
+  'Editorial': 'editorial',
+  'editorial': 'editorial',
+  'Why This Matters': 'why_this_matters',
+  'why_this_matters': 'why_this_matters',
+  'Regional Signals': 'regional_signals',
+  'regional_signals': 'regional_signals',
+  'Global Landscape': 'global_landscape',
+  'global_landscape': 'global_landscape',
+};
+
+/**
+ * Ground claims using structured evidence packs.
+ *
+ * For each claim, first searches the section's curated evidence pack
+ * (small, relevant set). If no match found there, falls back to
+ * the full signal/trend matching.
+ *
+ * Creates a verifiable chain: claim -> evidence_item -> source_signal.
+ */
+export function groundClaimsToEvidence(
+  claims: ExtractedClaim[],
+  evidenceBundle: EvidencePackBundle,
+  signals: SourceSignalSummary[],
+  trends: SourceTrendSummary[],
+): GroundingResult {
+  const citationMap: ClaimReference[] = [];
+  const unsupportedClaims: UnsupportedClaim[] = [];
+
+  for (const claim of claims) {
+    // Map claim section to evidence pack section
+    const evidenceSection = QA_SECTION_TO_EVIDENCE[claim.section];
+    const sectionPack = evidenceSection
+      ? evidenceBundle.section_packs[evidenceSection]
+      : undefined;
+
+    let result: ClaimReference | null = null;
+
+    // Try matching against evidence pack first (curated, small set)
+    if (sectionPack && sectionPack.evidence_items.length > 0) {
+      result = matchClaimToEvidenceItems(claim, sectionPack);
+    }
+
+    // Fallback to full signal matching if no evidence match found
+    if (!result || result.support_status === 'unsupported' || result.support_status === 'unverifiable') {
+      result = matchClaimToSignals(claim, signals, trends);
+    }
+
+    citationMap.push(result);
+
+    if (result.support_status === 'unsupported') {
+      unsupportedClaims.push({
+        claim_text: claim.claim_text,
+        section: claim.section,
+        claim_type: claim.claim_type,
+        reason: result.reason,
+        confidence_score: result.confidence_score,
+        suggested_action: 'Verify this claim against original source material or remove it.',
+        severity: result.confidence_score < 0.2 ? 'error' : 'warning',
+      });
+    }
+  }
+
+  return { citation_map: citationMap, unsupported_claims: unsupportedClaims };
+}
+
+/**
+ * Match a claim against the evidence items in its section's evidence pack.
+ */
+function matchClaimToEvidenceItems(
+  claim: ExtractedClaim,
+  sectionPack: { evidence_items: Array<{ id: string; source_id: string; source_url: string | null; title: string; evidence_text: string; company: string | null; tags: string[]; data_points: Array<{ value: string }> }> },
+): ClaimReference {
+  const claimLower = claim.claim_text.toLowerCase();
+  const claimTokens = tokenise(claimLower);
+  const importantTokens = claimTokens.filter(t => t.length > 3 && !STOP_WORDS.has(t));
+
+  let bestMatch: { evidenceId: string; sourceId: string; sourceUrl: string | null; score: number; excerpt: string } | null = null;
+  const matchedSignalIds: string[] = [];
+  const matchedUrls: string[] = [];
+
+  for (const item of sectionPack.evidence_items) {
+    const evidenceText = [item.title, item.evidence_text].join(' ').toLowerCase();
+    const evidenceTokens = tokenise(evidenceText);
+
+    // Token overlap
+    const matchCount = importantTokens.filter(t => evidenceTokens.includes(t)).length;
+    let score = importantTokens.length > 0 ? (matchCount / importantTokens.length) * 0.5 : 0;
+
+    // Company match
+    if (item.company && claimLower.includes(item.company.toLowerCase())) {
+      score += 0.25;
+    }
+
+    // Data point match (if claim contains a number that's in the evidence)
+    for (const dp of item.data_points || []) {
+      if (claimLower.includes(dp.value.toLowerCase())) {
+        score += 0.2;
+        break;
+      }
+    }
+
+    if (score > 0.3) {
+      matchedSignalIds.push(item.source_id);
+      if (item.source_url) matchedUrls.push(item.source_url);
+      if (!bestMatch || score > bestMatch.score) {
+        bestMatch = {
+          evidenceId: item.id,
+          sourceId: item.source_id,
+          sourceUrl: item.source_url,
+          score,
+          excerpt: truncate(item.evidence_text, 200),
+        };
+      }
+    }
+  }
+
+  const totalScore = bestMatch?.score ?? 0;
+  const supportStatus = determineSupportStatus(totalScore, matchedSignalIds.length);
+
+  return {
+    claim_text: claim.claim_text,
+    section: claim.section,
+    claim_type: claim.claim_type,
+    support_status: supportStatus,
+    matched_signal_ids: [...new Set(matchedSignalIds)],
+    matched_source_urls: [...new Set(matchedUrls)],
+    evidence_excerpt: bestMatch?.excerpt || null,
+    confidence_score: Math.min(1, totalScore),
+    reason: supportStatus === 'supported' || supportStatus === 'partially_supported'
+      ? `Grounded in evidence pack (${matchedSignalIds.length} evidence item${matchedSignalIds.length > 1 ? 's' : ''}).`
+      : 'No matching evidence found in section evidence pack.',
+  };
+}
+
+// ── Phase 5: Fact-Based Grounding ────────────────────────
+
+/**
+ * Ground claims against persisted EvidenceFact rows.
+ *
+ * Preferred when Phase 5 facts are available. Falls back to
+ * Phase 4 evidence bundle or raw signal matching.
+ */
+export function groundClaimsToFacts(
+  claims: ExtractedClaim[],
+  facts: EvidenceFact[],
+  signals: SourceSignalSummary[],
+  trends: SourceTrendSummary[],
+): GroundingResult {
+  if (facts.length === 0) {
+    return groundClaimsToSignals(claims, signals, trends);
+  }
+
+  const citationMap: ClaimReference[] = [];
+  const unsupportedClaims: UnsupportedClaim[] = [];
+
+  for (const claim of claims) {
+    const result = matchClaimToFacts(claim, facts);
+
+    // Fallback to signal matching if no fact match
+    const finalResult = (result.support_status === 'unsupported' || result.support_status === 'unverifiable')
+      ? matchClaimToSignals(claim, signals, trends)
+      : result;
+
+    citationMap.push(finalResult);
+
+    if (finalResult.support_status === 'unsupported') {
+      unsupportedClaims.push({
+        claim_text: claim.claim_text,
+        section: claim.section,
+        claim_type: claim.claim_type,
+        reason: finalResult.reason,
+        confidence_score: finalResult.confidence_score,
+        suggested_action: 'Verify this claim against original source material or remove it.',
+        severity: finalResult.confidence_score < 0.2 ? 'error' : 'warning',
+      });
+    }
+  }
+
+  return { citation_map: citationMap, unsupported_claims: unsupportedClaims };
+}
+
+function matchClaimToFacts(
+  claim: ExtractedClaim,
+  facts: EvidenceFact[],
+): ClaimReference {
+  const claimLower = claim.claim_text.toLowerCase();
+  const claimTokens = tokenise(claimLower);
+  const importantTokens = claimTokens.filter((t) => t.length > 3 && !STOP_WORDS.has(t));
+
+  let bestMatch: { fact: EvidenceFact; score: number } | null = null;
+  const matchedSignalIds: string[] = [];
+  const matchedUrls: string[] = [];
+
+  for (const fact of facts) {
+    const factText = fact.fact_text.toLowerCase();
+    const factTokens = tokenise(factText);
+
+    // Token overlap (weight 0.45)
+    const matched = importantTokens.filter((t) => factTokens.includes(t));
+    let score = importantTokens.length > 0 ? (matched.length / importantTokens.length) * 0.45 : 0;
+
+    // Company match (weight 0.3)
+    if (fact.company && claimLower.includes(fact.company.toLowerCase())) {
+      score += 0.3;
+    }
+
+    // Topic match (weight 0.15)
+    if (fact.topic && claimLower.includes(fact.topic.toLowerCase())) {
+      score += 0.15;
+    }
+
+    // Numeric overlap (weight 0.1)
+    const claimNumbers = claimLower.match(/\d+(?:\.\d+)?/g) ?? ([] as string[]);
+    const factNumbers = factText.match(/\d+(?:\.\d+)?/g) ?? ([] as string[]);
+    if (claimNumbers.some((n: string) => factNumbers.includes(n))) {
+      score += 0.1;
+    }
+
+    if (score > 0.25) {
+      matchedSignalIds.push(fact.signal_id);
+      if (fact.source_url) matchedUrls.push(fact.source_url);
+      if (!bestMatch || score > bestMatch.score) {
+        bestMatch = { fact, score };
+      }
+    }
+  }
+
+  const totalScore = bestMatch?.score ?? 0;
+  const supportStatus = determineSupportStatus(totalScore, matchedSignalIds.length);
+
+  return {
+    claim_text: claim.claim_text,
+    section: claim.section,
+    claim_type: claim.claim_type,
+    support_status: supportStatus,
+    matched_signal_ids: [...new Set(matchedSignalIds)],
+    matched_source_urls: [...new Set(matchedUrls)],
+    evidence_excerpt: bestMatch ? truncate(bestMatch.fact.fact_text, 200) : null,
+    confidence_score: Math.min(1, totalScore),
+    reason: supportStatus === 'supported' || supportStatus === 'partially_supported'
+      ? `Grounded in ${matchedSignalIds.length} evidence fact${matchedSignalIds.length > 1 ? 's' : ''} (Phase 5).`
+      : 'No matching evidence facts found.',
+  };
+}

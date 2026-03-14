@@ -21,7 +21,7 @@ import { runNumericalConsistencyCheck } from './run-numerical-consistency-check'
 import { runDerivativeConsistencyCheck } from './run-derivative-consistency-check';
 import { runLLMEditorialReview } from './run-llm-editorial-review';
 import { extractClaims } from './extract-claims';
-import { groundClaimsToSignals } from './ground-claims-to-signals';
+import { groundClaimsToSignals, groundClaimsToEvidence, groundClaimsToFacts } from './ground-claims-to-signals';
 import { extractIssueSections, getCoreContentSections } from './extract-issue-sections';
 import { calculateCitationCoverage } from './calculate-citation-coverage';
 import { generateSelectedReferences } from './generate-selected-references';
@@ -31,6 +31,9 @@ import { calculateQAScore } from './calculate-qa-score';
 import { fetchSignalsByIds } from '../intelligence/fetch-signals-by-ids';
 import { fetchTrendsByIds } from '../intelligence/fetch-trends-by-ids';
 import { fetchClustersByIds } from '../intelligence/fetch-clusters-by-ids';
+
+// Phase 5: Evidence facts
+import { getFactsBySignalIds } from '../evidence/extract-facts';
 
 /**
  * Build QACheckInput from an Issue object.
@@ -159,11 +162,19 @@ export async function runIssueQA(issue: Issue): Promise<QAReport> {
   const claims = await extractClaims(coreSections);
 
   // ── Phase 4: Ground claims + citation coverage ──────────────
-  const groundingResult = groundClaimsToSignals(
-    claims,
-    input.source_signals,
-    input.source_trends,
-  );
+  // Prefer Phase 5 fact-based grounding > Phase 4 evidence bundle > raw signals
+  let groundingResult;
+  const evidenceFacts = input.source_signal_ids?.length
+    ? await getFactsBySignalIds(input.source_signal_ids).catch(() => [])
+    : [];
+
+  if (evidenceFacts.length > 0) {
+    groundingResult = groundClaimsToFacts(claims, evidenceFacts, input.source_signals, input.source_trends);
+  } else if (issue.evidence_pack_bundle) {
+    groundingResult = groundClaimsToEvidence(claims, issue.evidence_pack_bundle, input.source_signals, input.source_trends);
+  } else {
+    groundingResult = groundClaimsToSignals(claims, input.source_signals, input.source_trends);
+  }
   const citationMap = groundingResult.citation_map;
   const unsupportedClaims = groundingResult.unsupported_claims;
 

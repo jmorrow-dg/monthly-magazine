@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import PageRenderer from './PageRenderer';
+import LazyPageRenderer from './LazyPageRenderer';
 import SpreadNavigation from './SpreadNavigation';
 import TableOfContents from './TableOfContents';
 import ShareActions from './ShareActions';
@@ -82,6 +83,23 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
   const rightHtml = spread.rightPageNumber ? pageHtmls[spread.rightPageNumber - 1] : null;
   const isSinglePage = !rightHtml;
 
+  // Preload adjacent spreads (hidden off-screen) so transitions feel instant
+  const adjacentPages: string[] = [];
+  for (const offset of [-1, 1]) {
+    const idx = currentSpread + offset;
+    if (idx >= 0 && idx < TOTAL_SPREADS) {
+      const adj = SPREAD_LAYOUT[idx];
+      if (adj.leftPageNumber) {
+        const h = pageHtmls[adj.leftPageNumber - 1];
+        if (h) adjacentPages.push(h);
+      }
+      if (adj.rightPageNumber) {
+        const h = pageHtmls[adj.rightPageNumber - 1];
+        if (h) adjacentPages.push(h);
+      }
+    }
+  }
+
   // Build page label
   let pageLabel: string;
   if (spread.leftPageNumber && spread.rightPageNumber) {
@@ -123,7 +141,7 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
           {pageHtmls.map((html, i) =>
             html ? (
               <div key={i} className="rounded-lg overflow-hidden shadow-2xl border border-[#222222]">
-                <PageRenderer html={html} />
+                <LazyPageRenderer html={html} />
               </div>
             ) : null
           )}
@@ -221,6 +239,13 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
           onNext={goNext}
           pageLabel={pageLabel}
         />
+      </div>
+
+      {/* Hidden preload of adjacent spreads so next/prev transitions are instant */}
+      <div className="sr-only" aria-hidden="true" style={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}>
+        {adjacentPages.map((h, i) => (
+          <iframe key={`preload-${currentSpread}-${i}`} srcDoc={h} tabIndex={-1} sandbox="allow-same-origin" style={{ width: 1, height: 1 }} />
+        ))}
       </div>
     </div>
   );
