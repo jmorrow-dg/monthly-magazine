@@ -199,8 +199,8 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
             <div
               className={`bg-[#141414] rounded-l-sm overflow-hidden ${isSinglePage ? 'rounded-r-sm' : ''}`}
               style={{
-                width: isSinglePage ? '40vw' : '38vw',
-                maxWidth: isSinglePage ? 500 : 450,
+                width: isSinglePage ? '42vw' : '40vw',
+                maxWidth: isSinglePage ? 560 : 520,
                 boxShadow: isSinglePage
                   ? '0 20px 60px rgba(0,0,0,0.5)'
                   : '4px 0 20px rgba(0,0,0,0.3)',
@@ -220,8 +220,8 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
             <div
               className="bg-[#141414] rounded-r-sm overflow-hidden"
               style={{
-                width: '38vw',
-                maxWidth: 450,
+                width: '40vw',
+                maxWidth: 520,
                 boxShadow: '-4px 0 20px rgba(0,0,0,0.3)',
               }}
             >
