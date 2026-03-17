@@ -74,7 +74,7 @@ export function renderClosing(data: ClosingPageData): string {
       <!-- Contact -->
       <div style="text-align: center;">
         <div style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.midGrey}; margin-bottom: 3pt;">
-          jmorrow@davidandgoliath.ai
+          hello@davidandgoliath.ai
         </div>
         <div style="font-family: 'Inter', sans-serif; font-size: 7.5pt; color: ${COLORS.midGrey};">
           davidandgoliath.ai
