@@ -13,7 +13,7 @@ export function renderSectionDividerPage(data: SectionDividerPageData): string {
   <style>${BASE_STYLES}</style>
 </head>
 <body>
-  <div class="page" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+  <div class="page" style="padding: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
 
     <!-- DG logo at top -->
     <div style="position: absolute; top: 38pt; left: 38pt;">
@@ -21,8 +21,8 @@ export function renderSectionDividerPage(data: SectionDividerPageData): string {
     </div>
 
     <!-- Centred content -->
-    <div style="max-width: 320pt;">
-      <div style="width: 50pt; height: 2pt; background: ${COLORS.gold}; border-radius: 1pt; margin: 0 auto 20pt;"></div>
+    <div style="max-width: 360pt; width: 100%; display: flex; flex-direction: column; align-items: center;">
+      <div style="width: 50pt; height: 2pt; background: ${COLORS.gold}; border-radius: 1pt; margin-bottom: 20pt;"></div>
       <h1 style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 26pt; color: ${COLORS.white}; line-height: 1.2; margin: 0;">
         ${escapeHtml(data.title)}
       </h1>
@@ -31,11 +31,11 @@ export function renderSectionDividerPage(data: SectionDividerPageData): string {
         ${escapeHtml(data.subtitle)}
       </p>
       ` : ''}
-      <div style="width: 50pt; height: 2pt; background: ${COLORS.gold}; border-radius: 1pt; margin: 20pt auto 0;"></div>
+      <div style="width: 50pt; height: 2pt; background: ${COLORS.gold}; border-radius: 1pt; margin-top: 20pt;"></div>
     </div>
 
     <!-- Bottom accent -->
-    <div style="position: absolute; bottom: 28pt; left: 38pt; right: 38pt; display: flex; justify-content: center;">
+    <div style="position: absolute; bottom: 28pt; left: 0; right: 0; display: flex; justify-content: center;">
       <div style="width: 36pt; height: 2pt; background: ${COLORS.gold}; border-radius: 1pt; opacity: 0.4;"></div>
     </div>
 

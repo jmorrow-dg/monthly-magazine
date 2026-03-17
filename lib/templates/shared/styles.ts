@@ -31,7 +31,7 @@ export const BASE_STYLES = `
     height: 297mm;
     position: relative;
     overflow: hidden;
-    padding: 32pt 34pt;
+    padding: 32pt 38pt 32pt 34pt;
   }
 
   /* Content overflow protection */
