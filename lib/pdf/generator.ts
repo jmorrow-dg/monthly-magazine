@@ -88,6 +88,14 @@ function buildPageHtmls(issue: Issue): string[] {
       subtitle: issue.cover_subtitle,
       editionLabel,
       coverImageUrl: issue.cover_image_url,
+      teaserSections: [
+        'Executive Briefing',
+        'Cover Story Analysis',
+        'Strategic Implications',
+        'Industry Watch',
+        'Operator Playbooks',
+        'Strategic Signals',
+      ],
     }),
     /* 2  */ renderEditorial({
       note: issue.editorial_note || '',

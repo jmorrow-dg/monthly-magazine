@@ -111,14 +111,14 @@ export function renderColumnText(text: string, opts?: { dropCap?: boolean }): st
       if (i === 0 && opts?.dropCap && p.length > 0) {
         const first = escapeHtml(p.charAt(0));
         const rest = escapeHtml(p.slice(1));
-        return `<p style="font-family: 'Inter', sans-serif; font-size: 8.5pt; color: ${COLORS.lightGrey}; line-height: 1.65; margin-bottom: 8pt;"><span style="float: left; font-family: 'Playfair Display', serif; font-size: 36pt; font-weight: 700; color: ${COLORS.gold}; line-height: 0.8; margin-right: 4pt; margin-top: 3pt;">${first}</span>${rest}</p>`;
+        return `<p style="font-family: 'Inter', sans-serif; font-size: 8.5pt; color: ${COLORS.lightGrey}; line-height: 1.65; margin-bottom: 8pt; word-break: break-word; overflow-wrap: break-word;"><span style="float: left; font-family: 'Playfair Display', serif; font-size: 44pt; font-weight: 700; color: ${COLORS.gold}; line-height: 0.8; margin-right: 5pt; margin-top: 4pt;">${first}</span>${rest}</p>`;
       }
-      return `<p style="font-family: 'Inter', sans-serif; font-size: 8.5pt; color: ${COLORS.lightGrey}; line-height: 1.65; margin-bottom: 8pt;">${escapeHtml(p)}</p>`;
+      return `<p style="font-family: 'Inter', sans-serif; font-size: 8.5pt; color: ${COLORS.lightGrey}; line-height: 1.65; margin-bottom: 8pt; word-break: break-word; overflow-wrap: break-word;">${escapeHtml(p)}</p>`;
     })
     .join('');
 
   return `
-    <div style="columns: 2; column-gap: 16pt; orphans: 3; widows: 3;">
+    <div style="columns: 2; column-gap: 18pt; orphans: 3; widows: 3; width: 100%; overflow: hidden; column-fill: auto;">
       ${html}
     </div>
   `;
@@ -130,9 +130,10 @@ export function renderColumnText(text: string, opts?: { dropCap?: boolean }): st
  */
 export function renderPullQuote(quote: string): string {
   return `
-    <div style="column-span: all; margin: 14pt 0; padding: 12pt 16pt; border-left: 3pt solid ${COLORS.gold}; background: rgba(184,134,11,0.04);">
-      <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 11pt; color: ${COLORS.offWhite}; line-height: 1.55; margin: 0;">
-        &ldquo;${escapeHtml(quote)}&rdquo;
+    <div style="column-span: all; margin: 18pt 0; padding: 16pt 20pt; border-left: 3pt solid ${COLORS.gold}; background: rgba(184,134,11,0.05); position: relative;">
+      <div style="position: absolute; top: 10pt; left: 16pt; font-family: 'Playfair Display', serif; font-size: 36pt; color: ${COLORS.gold}; opacity: 0.18; line-height: 1; pointer-events: none;">&ldquo;</div>
+      <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 12.5pt; color: ${COLORS.offWhite}; line-height: 1.5; margin: 0; padding-left: 4pt;">
+        ${escapeHtml(quote)}
       </p>
     </div>
   `;

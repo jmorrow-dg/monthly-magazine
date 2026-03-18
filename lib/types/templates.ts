@@ -5,6 +5,8 @@ export type CoverPageData = {
   subtitle: string | null;
   editionLabel: string;
   coverImageUrl: string | null;
+  /** Optional "In This Issue" section teasers for the cover footer strip */
+  teaserSections?: string[];
 };
 
 export type EditorialPageData = {

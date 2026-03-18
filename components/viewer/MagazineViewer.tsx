@@ -103,17 +103,26 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
   // Build page label
   let pageLabel: string;
   if (spread.leftPageNumber && spread.rightPageNumber) {
-    pageLabel = `Pages ${spread.leftPageNumber}-${spread.rightPageNumber} of ${TOTAL_PAGES}`;
+    pageLabel = `${spread.leftPageNumber} \u2013 ${spread.rightPageNumber} / ${TOTAL_PAGES}`;
   } else if (spread.leftPageNumber) {
-    pageLabel = `Page ${spread.leftPageNumber} of ${TOTAL_PAGES}`;
+    pageLabel = `${spread.leftPageNumber} / ${TOTAL_PAGES}`;
   } else {
     pageLabel = '';
   }
+
+  const progressPercent = Math.round(((currentSpread + 1) / TOTAL_SPREADS) * 100);
 
   // Mobile: stacked single-page view
   if (isMobile) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
+        {/* Mobile progress bar */}
+        <div className="h-[2px] bg-[#1a1a1a]">
+          <div
+            className="h-full bg-[#B8860B] transition-all duration-500 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
         <TableOfContents
           pageHtmls={pageHtmls}
           currentSpread={currentSpread}
@@ -153,6 +162,14 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
   // Desktop: spread view with transitions
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+      {/* Reading progress bar */}
+      <div className="h-[2px] bg-[#1a1a1a] flex-shrink-0">
+        <div
+          className="h-full bg-[#B8860B] transition-all duration-500 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+
       <TableOfContents
         pageHtmls={pageHtmls}
         currentSpread={currentSpread}
@@ -161,16 +178,22 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
         onClose={() => setTocOpen(false)}
         isMobile={false}
       />
+
       {/* Top bar */}
-      <div className="px-6 pt-4 flex items-center justify-between">
+      <div className="px-6 pt-3 pb-2 flex items-center justify-between flex-shrink-0">
         <Link href="/issues" className="text-[#B8860B] text-xs hover:underline">&larr; All Issues</Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          {pageLabel && (
+            <span className="text-[#444444] text-[11px] font-mono tracking-wider select-none">
+              {pageLabel}
+            </span>
+          )}
           <button
             onClick={() => setTocOpen(true)}
-            className="text-[#888888] hover:text-white text-xs transition-colors flex items-center gap-1.5"
+            className="text-[#666666] hover:text-white text-xs transition-colors flex items-center gap-1.5"
             aria-label="Table of contents"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-70">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" className="opacity-70">
               <rect x="1" y="2" width="14" height="1.5" rx="0.5" fill="currentColor"/>
               <rect x="1" y="7" width="14" height="1.5" rx="0.5" fill="currentColor"/>
               <rect x="1" y="12" width="14" height="1.5" rx="0.5" fill="currentColor"/>
@@ -184,11 +207,26 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
       </div>
 
       {/* Viewer area */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center px-8 pb-2 pt-0 relative min-h-0">
+        {/* Ambient glow behind spread */}
         <div
-          className={`flex ${isSinglePage ? 'justify-center' : 'gap-1'}`}
+          className="absolute pointer-events-none"
           style={{
-            maxHeight: '80vh',
+            width: '60%',
+            height: '50%',
+            background: 'radial-gradient(ellipse at center, rgba(184,134,11,0.06) 0%, transparent 70%)',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+
+        {/* Spread wrapper with deep shadow */}
+        <div
+          className={`flex ${isSinglePage ? 'justify-center' : 'gap-0'} relative`}
+          style={{
+            maxHeight: '82vh',
+            filter: 'drop-shadow(0 24px 64px rgba(0,0,0,0.75)) drop-shadow(0 4px 16px rgba(0,0,0,0.4))',
             animation: isTransitioning
               ? `spread-exit-${direction} 350ms ease-out forwards`
               : `spread-enter-${direction} 350ms ease-out forwards`,
@@ -197,22 +235,30 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
           {/* Left page */}
           {leftHtml && (
             <div
-              className={`bg-[#141414] rounded-l-sm overflow-hidden ${isSinglePage ? 'rounded-r-sm' : ''}`}
+              className={`bg-[#141414] overflow-hidden ${isSinglePage ? 'rounded-sm' : 'rounded-l-sm'}`}
               style={{
                 width: isSinglePage ? '42vw' : '40vw',
-                maxWidth: isSinglePage ? 560 : 520,
-                boxShadow: isSinglePage
-                  ? '0 20px 60px rgba(0,0,0,0.5)'
-                  : '4px 0 20px rgba(0,0,0,0.3)',
+                maxWidth: isSinglePage ? 580 : 540,
               }}
             >
               <PageRenderer html={leftHtml} />
             </div>
           )}
 
-          {/* Spine */}
+          {/* Book spine */}
           {!isSinglePage && (
-            <div className="w-[2px] bg-[#333333] self-stretch" />
+            <div
+              className="self-stretch flex-shrink-0 relative"
+              style={{ width: 4 }}
+            >
+              {/* Spine gradient: shadow from left page */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(to right, rgba(0,0,0,0.35) 0%, rgba(184,134,11,0.12) 50%, rgba(0,0,0,0.35) 100%)',
+                }}
+              />
+            </div>
           )}
 
           {/* Right page */}
@@ -221,8 +267,7 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
               className="bg-[#141414] rounded-r-sm overflow-hidden"
               style={{
                 width: '40vw',
-                maxWidth: 520,
-                boxShadow: '-4px 0 20px rgba(0,0,0,0.3)',
+                maxWidth: 540,
               }}
             >
               <PageRenderer html={rightHtml} />
@@ -232,12 +277,12 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
       </div>
 
       {/* Navigation */}
-      <div className="max-w-md mx-auto w-full pb-6">
+      <div className="max-w-md mx-auto w-full pb-5 flex-shrink-0">
         <SpreadNavigation
           currentSpread={currentSpread}
           onPrev={goPrev}
           onNext={goNext}
-          pageLabel={pageLabel}
+          pageLabel=""
         />
       </div>
 

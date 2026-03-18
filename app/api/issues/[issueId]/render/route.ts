@@ -79,7 +79,20 @@ export async function GET(request: Request, context: RouteContext) {
 
     // 24-page structure (5 data storytelling visuals)
     const pages = [
-      /* 1  */ renderCover({ headline: issue.cover_headline, subtitle: issue.cover_subtitle, editionLabel: label, coverImageUrl: issue.cover_image_url }),
+      /* 1  */ renderCover({
+        headline: issue.cover_headline,
+        subtitle: issue.cover_subtitle,
+        editionLabel: label,
+        coverImageUrl: issue.cover_image_url,
+        teaserSections: [
+          'Executive Briefing',
+          'Cover Story Analysis',
+          'Strategic Implications',
+          'Industry Watch',
+          'Operator Playbooks',
+          'Strategic Signals',
+        ],
+      }),
       /* 2  */ renderEditorial({ note: issue.editorial_note || '', month, edition: issue.edition }),
       /* 3  */ renderExecutiveBriefing({ items: issue.executive_briefing_json || [], coverHeadline: issue.cover_headline }),
       /* 4  */ renderGlobalLandscape({ regions: issue.global_landscape_json?.regions }),

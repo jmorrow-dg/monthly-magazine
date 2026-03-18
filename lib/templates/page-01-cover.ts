@@ -46,6 +46,20 @@ export function renderCover(data: CoverPageData): string {
       ` : ''}
     </div>
 
+    <!-- In This Issue teaser strip -->
+    ${data.teaserSections && data.teaserSections.length > 0 ? `
+    <div style="position: absolute; bottom: 50pt; left: 38pt; right: 38pt; z-index: 2;">
+      <div style="border-top: 0.4pt solid rgba(184,134,11,0.35); padding-top: 8pt; display: flex; align-items: center; gap: 10pt;">
+        <span style="font-family: 'Inter', sans-serif; font-size: 5.5pt; color: ${COLORS.gold}; text-transform: uppercase; letter-spacing: 1.5pt; white-space: nowrap; flex-shrink: 0;">In This Issue</span>
+        <div style="width: 1pt; height: 10pt; background: rgba(184,134,11,0.35); flex-shrink: 0;"></div>
+        ${data.teaserSections.map((s, i) => `
+          ${i > 0 ? `<div style="width: 1pt; height: 8pt; background: rgba(255,255,255,0.12); flex-shrink: 0;"></div>` : ''}
+          <span style="font-family: 'Inter', sans-serif; font-size: 6pt; color: rgba(240,240,240,0.6); white-space: nowrap;">${escapeHtml(s)}</span>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+
     <!-- Bottom bar -->
     <div style="position: absolute; bottom: 28pt; left: 38pt; right: 38pt; display: flex; justify-content: space-between; align-items: flex-end; z-index: 2;">
       <div>
