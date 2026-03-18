@@ -118,7 +118,7 @@ export function renderColumnText(text: string, opts?: { dropCap?: boolean }): st
     .join('');
 
   return `
-    <div style="columns: 2; column-gap: 18pt; orphans: 3; widows: 3; width: 100%; overflow: hidden; column-fill: auto;">
+    <div style="columns: 2; column-gap: 18pt; orphans: 3; widows: 3; width: 100%; overflow: hidden; column-fill: balance;">
       ${html}
     </div>
   `;
