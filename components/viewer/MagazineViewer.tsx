@@ -23,6 +23,7 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [tocOpen, setTocOpen] = useState(false);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTransitioningRef = useRef(false);
 
   useEffect(() => {
     function checkMobile() {
@@ -41,17 +42,19 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
   }, []);
 
   const navigateTo = useCallback((nextSpread: number, dir: 'next' | 'prev') => {
-    if (isTransitioning) return;
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
     setDirection(dir);
     setIsTransitioning(true);
 
     transitionTimer.current = setTimeout(() => {
       setCurrentSpread(nextSpread);
       requestAnimationFrame(() => {
+        isTransitioningRef.current = false;
         setIsTransitioning(false);
       });
     }, 350);
-  }, [isTransitioning]);
+  }, []);
 
   const goNext = useCallback(() => {
     const next = Math.min(currentSpread + 1, TOTAL_SPREADS - 1);
@@ -64,9 +67,9 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
   }, [currentSpread, navigateTo]);
 
   const jumpToSpread = useCallback((idx: number) => {
-    if (idx === currentSpread || isTransitioning) return;
+    if (idx === currentSpread || isTransitioningRef.current) return;
     navigateTo(idx, idx > currentSpread ? 'next' : 'prev');
-  }, [currentSpread, isTransitioning, navigateTo]);
+  }, [currentSpread, navigateTo]);
 
   // Keyboard navigation
   useEffect(() => {
