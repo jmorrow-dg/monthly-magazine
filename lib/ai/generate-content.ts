@@ -269,7 +269,7 @@ export async function generateIndustryWatch(
       ? `Intelligence signals:\n${formatSignalBlock(signalContext)}`
       : `Source material:\n${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`;
 
-  const prompt = `Based on the source material and cover story context, identify 4-6 industry-specific AI trends worth watching for operators and executives globally. Each should focus on a different industry sector. Include developments from companies and markets across multiple regions.
+  const prompt = `Based on the source material and cover story context, identify exactly 4 industry-specific AI trends worth watching for operators and executives globally. Each should focus on a different industry sector. Include developments from companies and markets across multiple regions.
 
 ${sourceBlock}
 
@@ -278,7 +278,7 @@ ${coverStory.subheadline}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
-Return a JSON array of 4-6 items:
+Return a JSON array of exactly 4 items:
 [{
   "industry": "string (specific industry sector)",
   "headline": "string (max 15 words)",
@@ -304,13 +304,13 @@ export async function generateTools(
       ? `Intelligence signals (identify tools mentioned or implied by these developments):\n${formatSignalBlock(signalContext)}`
       : `Source material:\n${sources.map((s, i) => `[${i + 1}] ${s}`).join('\n\n')}`;
 
-  const prompt = `Based on the source material, recommend 6 AI tools worth watching for business operators:
+  const prompt = `Based on the source material, recommend exactly 4 AI tools worth watching for business operators:
 
 ${sourceBlock}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
-Return a JSON array of exactly 6 items:
+Return a JSON array of exactly 4 items:
 [{
   "name": "string",
   "description": "string (max 40 words)",
@@ -337,7 +337,7 @@ export async function generatePlaybooks(
       ? `\n\nIntelligence signals for grounding playbooks:\n${formatSignalBlock(signalContext)}`
       : '';
 
-  const prompt = `Based on this cover story, create 4 practical operator playbooks that business leaders can implement regardless of region or market:
+  const prompt = `Based on this cover story, create exactly 3 practical operator playbooks that business leaders can implement regardless of region or market:
 
 Cover Story: ${coverStory.headline}
 ${coverStory.subheadline}
@@ -351,7 +351,7 @@ ${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
-Return a JSON array of exactly 4 items:
+Return a JSON array of exactly 3 items:
 [{
   "title": "string (max 15 words, action-oriented)",
   "context": "string (max 30 words)",
@@ -378,7 +378,7 @@ export async function generateStrategicSignals(
       ? `\n\nScored intelligence signals:\n${formatSignalBlock(signalContext)}`
       : '';
 
-  const prompt = `Based on the cover story and strategic implications, identify 4-6 strategic signals that forward-thinking operators and executives should be monitoring globally. These are early indicators of shifts that will shape the business landscape. Draw signals from AI labs, enterprise technology, regulatory developments, and adoption patterns across multiple regions.
+  const prompt = `Based on the cover story and strategic implications, identify exactly 4 strategic signals that forward-thinking operators and executives should be monitoring globally. These are early indicators of shifts that will shape the business landscape. Draw signals from AI labs, enterprise technology, regulatory developments, and adoption patterns across multiple regions.
 
 Cover Story: ${coverStory.headline}
 ${coverStory.subheadline}
@@ -389,7 +389,7 @@ ${signalEnrichment}
 
 ${instructions ? `Additional instructions: ${instructions}` : ''}
 
-Return a JSON array of 4-6 items:
+Return a JSON array of exactly 4 items:
 [{
   "signal": "string (max 15 words, the signal being observed)",
   "context": "string (max 40 words, why this signal matters)",
@@ -463,7 +463,7 @@ export async function generateBriefingPrompts(
       ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
       : '';
 
-  const prompt = `Based on the cover story and strategic implications, generate 6 "Operator Briefing Prompts" for the David & Goliath AI Intelligence Report. These are strategic questions that leadership teams should be discussing in their next meeting. Each prompt should provoke meaningful discussion about AI strategy, adoption, risk, or opportunity.
+  const prompt = `Based on the cover story and strategic implications, generate exactly 4 "Operator Briefing Prompts" for the David & Goliath AI Intelligence Report. These are strategic questions that leadership teams should be discussing in their next meeting. Each prompt should provoke meaningful discussion about AI strategy, adoption, risk, or opportunity.
 
 Cover Story: ${coverStory.headline}
 ${coverStory.subheadline}
@@ -481,7 +481,7 @@ Requirements:
 - Use Australian English
 - Do NOT use em dashes, en dashes, or hyphens as punctuation
 
-Return a JSON array of exactly 6 items:
+Return a JSON array of exactly 4 items:
 [{
   "question": "string (a strategic question for leadership discussion)",
   "explanation": "string (max 60 words, why this question matters and what to consider)",
