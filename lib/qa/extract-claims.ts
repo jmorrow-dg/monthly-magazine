@@ -4,12 +4,13 @@
 // ============================================================
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { ExtractedSection, ClaimType } from '../types/qa';
+import type { ExtractedSection, ClaimType, ClaimNature } from '../types/qa';
 
 export interface ExtractedClaim {
   claim_text: string;
   section: string;
   claim_type: ClaimType;
+  claim_nature: ClaimNature;
 }
 
 /**
@@ -62,21 +63,24 @@ async function extractClaimsViaLLM(
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
-      system: `You are a fact-checking editor. Extract every substantive factual claim from the provided magazine content.
+      system: `You are a fact-checking editor. Extract every substantive claim from the provided magazine content.
 
 A factual claim is a statement that asserts something specific: an event, a launch, a statistic, a company action, a trend, an adoption pattern, a funding event, a partnership, a strategic implication, or a regional movement.
 
 Do NOT extract:
 - Pure opinions or subjective assessments
-- Calls to action
-- General strategic advice without factual basis
 - Rhetorical questions
 - Section headers or labels
 
-For each claim, classify its type as one of: event, launch, funding, partnership, statistic, adoption, trend, strategic_implication, regional_movement, company_action`,
+For each claim, classify its type as one of: event, launch, funding, partnership, statistic, adoption, trend, strategic_implication, regional_movement, company_action
+
+Also classify each claim's nature:
+- "factual": Asserts a verifiable fact (e.g. "OpenAI raised $6.6 billion", "GDPR requires transparency controls")
+- "prescriptive": Gives advice, recommendations, or action steps (e.g. "Implement bias testing protocols", "Deploy access controls", "Consider establishing governance frameworks")
+- "editorial": Commentary, framing, or analysis that doesn't assert specific facts (e.g. "This represents a significant shift", "The implications are far-reaching")`,
       messages: [{
         role: 'user',
-        content: `Extract all substantive factual claims from this content:\n\n${sectionBlock}\n\nReturn a JSON array:\n[{"claim_text": "the specific claim", "section": "section label", "claim_type": "type"}]\n\nReturn ONLY the JSON array, no other text.`,
+        content: `Extract all substantive claims from this content:\n\n${sectionBlock}\n\nReturn a JSON array:\n[{"claim_text": "the specific claim", "section": "section label", "claim_type": "type", "claim_nature": "factual|prescriptive|editorial"}]\n\nReturn ONLY the JSON array, no other text.`,
       }],
     });
 
@@ -84,7 +88,14 @@ For each claim, classify its type as one of: event, launch, funding, partnership
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) return [];
 
-    return JSON.parse(jsonMatch[0]) as ExtractedClaim[];
+    const parsed = JSON.parse(jsonMatch[0]) as ExtractedClaim[];
+    // Ensure claim_nature is always set
+    return parsed.map(c => ({
+      ...c,
+      claim_nature: (['factual', 'prescriptive', 'editorial'] as ClaimNature[]).includes(c.claim_nature)
+        ? c.claim_nature
+        : classifyClaimNature(c.claim_text, c.section),
+    }));
   } catch (error) {
     console.error('LLM claim extraction failed:', error);
     // Fallback to rule-based for all sections
@@ -113,6 +124,7 @@ function extractClaimsRuleBased(section: ExtractedSection): ExtractedClaim[] {
         claim_text: trimmed,
         section: section.section_label,
         claim_type: claimType,
+        claim_nature: classifyClaimNature(trimmed, section.section_key),
       });
     }
   }
@@ -152,4 +164,43 @@ function classifySentence(sentence: string): ClaimType | null {
   if (/\b(january|february|march|april|may|june|july|august|september|october|november|december|202[4-9])\b/i.test(sentence)) return 'event';
 
   return null;
+}
+
+// ── Sections that are inherently advisory ────────────────────
+const PRESCRIPTIVE_SECTIONS = new Set([
+  'playbooks', 'briefing_prompts', 'Operator Playbooks', 'Briefing Prompts',
+]);
+
+// ── Imperative / advisory verb patterns ──────────────────────
+const PRESCRIPTIVE_PATTERNS = [
+  /^(implement|deploy|establish|build|create|develop|adopt|monitor|evaluate|assess|audit|design|integrate|prioritise|prioritize|consider|ensure|leverage|utilise|utilize|explore|plan|prepare|review|set up|configure)/i,
+  /\b(should|must|need to|recommend|advise|consider|ensure that|it is essential|it is critical|it is important|organisations should|teams should|leaders should|operators should)\b/i,
+  /\b(action item|next step|key takeaway|best practice|framework for|playbook|checklist)\b/i,
+];
+
+const EDITORIAL_PATTERNS = [
+  /^(this represents|this signals|this marks|this suggests|this demonstrates|this highlights|this underscores|the implications|what this means|notably|importantly|critically|significantly)\b/i,
+  /\b(remains to be seen|time will tell|worth watching|bears monitoring|stay tuned)\b/i,
+];
+
+/**
+ * Classify whether a claim is factual, prescriptive (advice), or editorial (commentary).
+ */
+function classifyClaimNature(claimText: string, sectionKey: string): ClaimNature {
+  // Sections that are inherently advisory
+  if (PRESCRIPTIVE_SECTIONS.has(sectionKey)) {
+    return 'prescriptive';
+  }
+
+  // Check for prescriptive language patterns
+  for (const pattern of PRESCRIPTIVE_PATTERNS) {
+    if (pattern.test(claimText)) return 'prescriptive';
+  }
+
+  // Check for editorial commentary patterns
+  for (const pattern of EDITORIAL_PATTERNS) {
+    if (pattern.test(claimText)) return 'editorial';
+  }
+
+  return 'factual';
 }

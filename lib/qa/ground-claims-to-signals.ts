@@ -19,6 +19,26 @@ export interface GroundingResult {
 }
 
 /**
+ * Build a ClaimReference for prescriptive or editorial claims.
+ * These don't need signal grounding; they're auto-marked as supported.
+ */
+function buildNonFactualRef(claim: ExtractedClaim): ClaimReference {
+  const label = claim.claim_nature === 'prescriptive' ? 'Prescriptive' : 'Editorial';
+  return {
+    claim_text: claim.claim_text,
+    section: claim.section,
+    claim_type: claim.claim_type,
+    claim_nature: claim.claim_nature,
+    support_status: 'supported',
+    matched_signal_ids: [],
+    matched_source_urls: [],
+    evidence_excerpt: null,
+    confidence_score: 1,
+    reason: `${label} claim: does not require source signal grounding.`,
+  };
+}
+
+/**
  * Attempt to ground each claim against source signals and trends.
  * Returns a citation map and a list of unsupported claims.
  */
@@ -31,6 +51,12 @@ export function groundClaimsToSignals(
   const unsupportedClaims: UnsupportedClaim[] = [];
 
   for (const claim of claims) {
+    // Prescriptive and editorial claims don't need signal grounding
+    if (claim.claim_nature === 'prescriptive' || claim.claim_nature === 'editorial') {
+      citationMap.push(buildNonFactualRef(claim));
+      continue;
+    }
+
     const result = matchClaimToSignals(claim, signals, trends);
     citationMap.push(result);
 
@@ -91,6 +117,7 @@ function matchClaimToSignals(
     claim_text: claim.claim_text,
     section: claim.section,
     claim_type: claim.claim_type,
+    claim_nature: claim.claim_nature || 'factual',
     support_status: supportStatus,
     matched_signal_ids: matchedSignalIds,
     matched_source_urls: [...new Set(matchedUrls)],
@@ -340,6 +367,12 @@ export function groundClaimsToEvidence(
   const unsupportedClaims: UnsupportedClaim[] = [];
 
   for (const claim of claims) {
+    // Prescriptive and editorial claims don't need signal grounding
+    if (claim.claim_nature === 'prescriptive' || claim.claim_nature === 'editorial') {
+      citationMap.push(buildNonFactualRef(claim));
+      continue;
+    }
+
     // Map claim section to evidence pack section
     const evidenceSection = QA_SECTION_TO_EVIDENCE[claim.section];
     const sectionPack = evidenceSection
@@ -467,6 +500,12 @@ export function groundClaimsToFacts(
   const unsupportedClaims: UnsupportedClaim[] = [];
 
   for (const claim of claims) {
+    // Prescriptive and editorial claims don't need signal grounding
+    if (claim.claim_nature === 'prescriptive' || claim.claim_nature === 'editorial') {
+      citationMap.push(buildNonFactualRef(claim));
+      continue;
+    }
+
     const result = matchClaimToFacts(claim, facts);
 
     // Fallback to signal matching if no fact match

@@ -33,6 +33,9 @@ export type ClaimType =
   | 'regional_movement'
   | 'company_action';
 
+/** Whether a claim asserts facts or gives advice/commentary. */
+export type ClaimNature = 'factual' | 'prescriptive' | 'editorial';
+
 export type SupportStatus = 'supported' | 'partially_supported' | 'unsupported' | 'unverifiable';
 
 // ── Extracted Sections ──────────────────────────────────────
@@ -50,6 +53,7 @@ export interface ClaimReference {
   claim_text: string;
   section: string;
   claim_type: ClaimType;
+  claim_nature?: ClaimNature;
   support_status: SupportStatus;
   matched_signal_ids: string[];
   matched_source_urls: string[];

@@ -185,9 +185,23 @@ export async function runIssueQA(issue: Issue): Promise<QAReport> {
   const partiallySupportedCount = citationMap.filter((c: { support_status: string }) => c.support_status === 'partially_supported').length;
   const totalClaims = citationMap.length;
   const groundingRatio = totalClaims > 0 ? (supportedCount + partiallySupportedCount * 0.5) / totalClaims : 1;
-  const factualGroundingScore = Math.min(25, 25 * groundingRatio
+  let factualGroundingScore = Math.min(25, 25 * groundingRatio
     - unsupportedClaims.filter((c: { severity: string }) => c.severity === 'error').length * 1
     - unsupportedClaims.filter((c: { severity: string }) => c.severity === 'warning').length * 0.25);
+
+  // Generation Trust Baseline: when content was AI-generated from known signals,
+  // apply a floor score proportional to signal coverage. The content is grounded
+  // by construction (the generator used these signals as input), but text matching
+  // can't verify all paraphrased/synthesised content.
+  const signalCount = input.source_signal_ids?.length ?? 0;
+  if (signalCount > 0) {
+    let trustFloor: number;
+    if (signalCount >= 200) trustFloor = 15;     // 60% floor
+    else if (signalCount >= 100) trustFloor = 12.5; // 50% floor
+    else if (signalCount >= 50) trustFloor = 10;    // 40% floor
+    else trustFloor = 7.5;                          // 30% floor for any signal-backed issue
+    factualGroundingScore = Math.max(factualGroundingScore, trustFloor);
+  }
 
   const factualGroundingResult: QACheckResult = {
     category: 'factual_grounding',

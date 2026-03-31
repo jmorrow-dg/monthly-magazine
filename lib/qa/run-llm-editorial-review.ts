@@ -41,14 +41,14 @@ export async function runLLMEditorialReview(input: QACheckInput): Promise<QAChec
 
   // Build signal context for the LLM
   const signalContext = input.source_signals.length > 0
-    ? `\n\nSOURCE SIGNALS (for reference):\n${input.source_signals.slice(0, 50).map(s =>
-        `- ${s.title}: ${s.summary.slice(0, 150)}`,
+    ? `\n\nSOURCE SIGNALS (for reference):\n${input.source_signals.slice(0, 100).map(s =>
+        `- ${s.title}: ${s.summary.slice(0, 300)}${s.company ? ` [${s.company}]` : ''}`,
       ).join('\n')}`
     : '';
 
   const trendContext = input.source_trends?.length > 0
     ? `\n\nSOURCE TRENDS:\n${input.source_trends.map(t =>
-        `- ${t.title}: ${t.description?.slice(0, 150) || ''}`,
+        `- ${t.title}: ${t.description?.slice(0, 200) || ''}`,
       ).join('\n')}`
     : '';
 
