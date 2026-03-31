@@ -18,6 +18,25 @@ interface VerificationResult {
   counts: { hallucinated: number; grounded: number; uncertain: number };
 }
 
+interface FixPreview {
+  id: string;
+  section: string;
+  field: string;
+  db_field: string;
+  item_index: number | null;
+  claim_text: string;
+  suggested_fix: string;
+  original_text: string;
+  fixed_text: string;
+  word_count_before: number;
+  word_count_after: number;
+}
+
+interface FixesResult {
+  fixes: FixPreview[];
+  summary: string;
+}
+
 interface QAPanelProps {
   issueId: string;
   qaScore: number | null;
@@ -81,6 +100,12 @@ export default function QAPanel({ issueId, qaScore, qaPassed, qaOverride, lastQa
   const [verifying, setVerifying] = useState(false);
   const [verification, setVerification] = useState<VerificationResult | null>(null);
   const [showVerification, setShowVerification] = useState(false);
+  const [generatingFixes, setGeneratingFixes] = useState(false);
+  const [fixPreviews, setFixPreviews] = useState<FixPreview[]>([]);
+  const [selectedFixes, setSelectedFixes] = useState<Set<string>>(new Set());
+  const [showFixes, setShowFixes] = useState(false);
+  const [applyingFixes, setApplyingFixes] = useState(false);
+  const [fixesApplied, setFixesApplied] = useState(false);
 
   async function runQA() {
     setRunning(true);
@@ -159,6 +184,65 @@ export default function QAPanel({ issueId, qaScore, qaPassed, qaOverride, lastQa
     } finally {
       setVerifying(false);
     }
+  }
+
+  async function generateFixes() {
+    if (!verification) return;
+    setGeneratingFixes(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/issues/${issueId}/generate-fixes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verdicts: verification.verdicts }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Fix generation failed');
+      }
+      const data: FixesResult = await res.json();
+      setFixPreviews(data.fixes);
+      setSelectedFixes(new Set(data.fixes.map(f => f.id)));
+      setShowFixes(true);
+      setFixesApplied(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Fix generation failed');
+    } finally {
+      setGeneratingFixes(false);
+    }
+  }
+
+  async function applySelectedFixes() {
+    const fixesToApply = fixPreviews.filter(f => selectedFixes.has(f.id));
+    if (fixesToApply.length === 0) return;
+    setApplyingFixes(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/issues/${issueId}/apply-fixes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fixes: fixesToApply }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Apply fixes failed');
+      }
+      setFixesApplied(true);
+      onQAComplete();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Apply fixes failed');
+    } finally {
+      setApplyingFixes(false);
+    }
+  }
+
+  function toggleFixSelection(fixId: string) {
+    setSelectedFixes(prev => {
+      const next = new Set(prev);
+      if (next.has(fixId)) next.delete(fixId);
+      else next.add(fixId);
+      return next;
+    });
   }
 
   function toggleFindingSection(key: string) {
@@ -398,6 +482,109 @@ export default function QAPanel({ issueId, qaScore, qaPassed, qaOverride, lastQa
               </div>
             ))}
           </div>
+
+          {/* Fix Hallucinated Claims button */}
+          {verification.counts.hallucinated > 0 && !fixesApplied && (
+            <button
+              onClick={generateFixes}
+              disabled={generatingFixes}
+              className="w-full mt-3 py-2 text-xs font-semibold bg-[#DC2626]/15 text-[#DC2626] border border-[#DC2626]/30 rounded-lg hover:bg-[#DC2626]/25 transition-colors disabled:opacity-50"
+            >
+              {generatingFixes
+                ? 'Generating Fixes...'
+                : `Fix ${verification.counts.hallucinated} Hallucinated Claims`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Fix Preview Panel */}
+      {showFixes && fixPreviews.length > 0 && (
+        <div className="mb-3 p-3 bg-[#1A2E1A] border border-[#335533] rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-[10px] text-[#22C55E] uppercase tracking-wider font-semibold">
+              Fix Preview
+            </h4>
+            <button
+              onClick={() => setShowFixes(false)}
+              className="text-[10px] text-[#666666] hover:text-white"
+            >
+              Hide
+            </button>
+          </div>
+
+          {fixesApplied ? (
+            <div className="p-3 bg-[#112211] rounded text-center">
+              <p className="text-[11px] text-[#22C55E] font-semibold mb-1">Fixes Applied Successfully</p>
+              <p className="text-[10px] text-[#88AA88]">
+                Content has been updated. Click &quot;Run QA Review&quot; to see the new score.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-[10px] text-[#88AA88] mb-2">
+                {fixPreviews.length} fix{fixPreviews.length !== 1 ? 'es' : ''} generated. Review and select which to apply:
+              </p>
+
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {fixPreviews.map((fix) => (
+                  <div key={fix.id} className="p-2 bg-[#112211] rounded text-[10px] leading-tight">
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedFixes.has(fix.id)}
+                        onChange={() => toggleFixSelection(fix.id)}
+                        className="mt-0.5 shrink-0 accent-[#22C55E]"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-[#22C55E] font-semibold">{fix.section}</span>
+                          <span className="text-[#556655]">&gt;</span>
+                          <span className="text-[#88AA88]">{fix.field}</span>
+                          {fix.item_index !== null && (
+                            <span className="text-[#556655]">[{fix.item_index + 1}]</span>
+                          )}
+                          <span className="text-[9px] text-[#556655] ml-auto">
+                            {fix.word_count_before}w &rarr; {fix.word_count_after}w
+                          </span>
+                        </div>
+
+                        {/* Original */}
+                        <div className="mb-1">
+                          <span className="text-[8px] text-[#DC2626] font-bold">ORIGINAL:</span>
+                          <p className="text-[#886666] mt-0.5 line-clamp-2">{fix.original_text.slice(0, 200)}...</p>
+                        </div>
+
+                        {/* Fixed */}
+                        <div>
+                          <span className="text-[8px] text-[#22C55E] font-bold">FIXED:</span>
+                          <p className="text-[#88AA88] mt-0.5 line-clamp-2">{fix.fixed_text.slice(0, 200)}...</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={applySelectedFixes}
+                  disabled={applyingFixes || selectedFixes.size === 0}
+                  className="flex-1 py-2 text-xs font-semibold bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30 rounded-lg hover:bg-[#22C55E]/25 transition-colors disabled:opacity-50"
+                >
+                  {applyingFixes
+                    ? 'Applying...'
+                    : `Apply ${selectedFixes.size} Fix${selectedFixes.size !== 1 ? 'es' : ''}`}
+                </button>
+                <button
+                  onClick={() => { setShowFixes(false); setFixPreviews([]); }}
+                  className="px-3 py-2 text-xs text-[#888888] hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
