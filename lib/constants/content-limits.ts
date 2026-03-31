@@ -12,9 +12,9 @@ export const CONTENT_LIMITS: Record<string, Record<string, ContentLimit>> = {
   cover_story: {
     headline: { maxChars: 200, maxWords: 20, warnWords: 15 },
     subheadline: { maxChars: 300, maxWords: 35, warnWords: 25 },
-    introduction: { maxChars: 3000, maxWords: 500, warnWords: 400 },
-    analysis: { maxChars: 4000, maxWords: 650, warnWords: 550 },
-    strategic_implications: { maxChars: 3000, maxWords: 500, warnWords: 400 },
+    introduction: { maxChars: 5000, maxWords: 800, warnWords: 650 },
+    analysis: { maxChars: 6000, maxWords: 1000, warnWords: 850 },
+    strategic_implications: { maxChars: 5000, maxWords: 800, warnWords: 650 },
   },
   implications: {
     title: { maxChars: 200, maxWords: 20, warnWords: 15 },

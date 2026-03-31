@@ -12,9 +12,9 @@ const developmentItemSchema = z.object({
 const coverStorySchema = z.object({
   headline: z.string().min(1).max(200),
   subheadline: z.string().min(1).max(300),
-  introduction: z.string().min(1).max(3000),
-  analysis: z.string().min(1).max(4000),
-  strategic_implications: z.string().min(1).max(3000),
+  introduction: z.string().min(1).max(5000),
+  analysis: z.string().min(1).max(6000),
+  strategic_implications: z.string().min(1).max(5000),
   pull_quotes: z.array(z.string().max(200)).max(6),
 });
 
