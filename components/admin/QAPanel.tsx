@@ -3,6 +3,21 @@
 import { useState } from 'react';
 import type { QAReportRow } from '@/lib/types/qa';
 
+interface ClaimVerdict {
+  claim_text: string;
+  section: string;
+  verdict: 'hallucinated' | 'grounded' | 'partially_grounded' | 'uncertain';
+  explanation: string;
+  matching_signal_title: string | null;
+  suggested_fix: string | null;
+}
+
+interface VerificationResult {
+  verdicts: ClaimVerdict[];
+  summary: string;
+  counts: { hallucinated: number; grounded: number; uncertain: number };
+}
+
 interface QAPanelProps {
   issueId: string;
   qaScore: number | null;
@@ -63,6 +78,9 @@ export default function QAPanel({ issueId, qaScore, qaPassed, qaOverride, lastQa
   const [overrideReason, setOverrideReason] = useState('');
   const [overriding, setOverriding] = useState(false);
   const [showOverrideForm, setShowOverrideForm] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verification, setVerification] = useState<VerificationResult | null>(null);
+  const [showVerification, setShowVerification] = useState(false);
 
   async function runQA() {
     setRunning(true);
@@ -121,6 +139,25 @@ export default function QAPanel({ issueId, qaScore, qaPassed, qaOverride, lastQa
       setError(err instanceof Error ? err.message : 'Override failed');
     } finally {
       setOverriding(false);
+    }
+  }
+
+  async function verifyClaims() {
+    setVerifying(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/issues/${issueId}/verify-claims`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Verification failed');
+      }
+      const data = await res.json();
+      setVerification(data);
+      setShowVerification(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -293,6 +330,77 @@ export default function QAPanel({ issueId, qaScore, qaPassed, qaOverride, lastQa
         </div>
       )}
 
+      {/* Deep Claim Verification Results */}
+      {verification && showVerification && (
+        <div className="mb-3 p-3 bg-[#1A1A2E] border border-[#333355] rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-[10px] text-[#7C83FF] uppercase tracking-wider font-semibold">
+              Deep Claim Verification
+            </h4>
+            <button
+              onClick={() => setShowVerification(false)}
+              className="text-[10px] text-[#666666] hover:text-white"
+            >
+              Hide
+            </button>
+          </div>
+          <p className="text-[10px] text-[#B0B0B0] mb-2">{verification.summary}</p>
+
+          {/* Verdict summary badges */}
+          <div className="flex gap-2 mb-2">
+            {verification.counts.hallucinated > 0 && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#DC2626]/15 text-[#DC2626] font-semibold">
+                {verification.counts.hallucinated} Hallucinated
+              </span>
+            )}
+            {verification.counts.grounded > 0 && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#22C55E]/15 text-[#22C55E] font-semibold">
+                {verification.counts.grounded} Grounded
+              </span>
+            )}
+            {verification.counts.uncertain > 0 && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#F59E0B]/15 text-[#F59E0B] font-semibold">
+                {verification.counts.uncertain} Uncertain
+              </span>
+            )}
+          </div>
+
+          {/* Individual verdicts */}
+          <div className="space-y-1.5 max-h-64 overflow-y-auto">
+            {verification.verdicts.map((v, i) => (
+              <div key={i} className="p-2 bg-[#111122] rounded text-[10px] leading-tight">
+                <div className="flex items-start gap-1.5">
+                  <span
+                    className="inline-block px-1 py-0.5 rounded text-[8px] font-bold shrink-0 mt-0.5"
+                    style={{
+                      backgroundColor: v.verdict === 'hallucinated' ? '#DC262620' :
+                        v.verdict === 'grounded' || v.verdict === 'partially_grounded' ? '#22C55E20' : '#F59E0B20',
+                      color: v.verdict === 'hallucinated' ? '#DC2626' :
+                        v.verdict === 'grounded' || v.verdict === 'partially_grounded' ? '#22C55E' : '#F59E0B',
+                    }}
+                  >
+                    {v.verdict === 'hallucinated' ? 'HALLUCINATED' :
+                      v.verdict === 'grounded' ? 'GROUNDED' :
+                      v.verdict === 'partially_grounded' ? 'PARTIAL' : 'UNCERTAIN'}
+                  </span>
+                  <div className="flex-1">
+                    <span className="text-[#B0B0B0]">{v.section}: </span>
+                    <span className="text-[#888888]">{v.claim_text.slice(0, 150)}{v.claim_text.length > 150 ? '...' : ''}</span>
+                  </div>
+                </div>
+                <p className="text-[#666688] mt-1 ml-6">{v.explanation}</p>
+                {v.matching_signal_title && (
+                  <p className="text-[#22C55E]/70 mt-0.5 ml-6 text-[9px]">Matching signal: {v.matching_signal_title}</p>
+                )}
+                {v.verdict === 'hallucinated' && v.suggested_fix && (
+                  <p className="text-[#DC2626]/80 mt-0.5 ml-6 text-[9px]">Fix: {v.suggested_fix}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* QA Override form */}
       {!displayPassed && displayScore !== null && displayScore !== undefined && !qaOverride && (
         <div className="mb-2">
@@ -344,6 +452,16 @@ export default function QAPanel({ issueId, qaScore, qaPassed, qaOverride, lastQa
         >
           {running ? 'Running QA...' : 'Run QA Review'}
         </button>
+
+        {report && (report.unsupported_claim_count > 0 || report.reasoning_flag_count > 0) && (
+          <button
+            onClick={verifyClaims}
+            disabled={verifying}
+            className="w-full py-2 text-xs font-semibold bg-[#7C83FF]/15 text-[#7C83FF] border border-[#7C83FF]/30 rounded-lg hover:bg-[#7C83FF]/25 transition-colors disabled:opacity-50"
+          >
+            {verifying ? 'Verifying Claims...' : 'Verify Flagged Claims'}
+          </button>
+        )}
 
         {!report && displayScore !== null && (
           <button
