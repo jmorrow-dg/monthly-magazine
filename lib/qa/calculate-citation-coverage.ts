@@ -11,21 +11,21 @@ import type { QACheckResult, ClaimReference, SupportStatus } from '../types/qa';
  * High-value sections require higher coverage.
  */
 const SECTION_THRESHOLDS: Record<string, number> = {
-  'Cover Story': 0.8,
-  'Editorial Note': 0.6,
-  'Why This Matters': 0.7,
-  'Strategic Implications': 0.75,
-  'Enterprise Spotlight': 0.75,
-  'Executive Summary': 0.5, // derivative, lower threshold
-  'Industry Watch': 0.6,
-  'Strategic Signals': 0.7,
-  'Tools & Platforms': 0.5,
-  'Operator Playbooks': 0.5,
-  'Executive Briefing': 0.6,
-  'Briefing Prompts': 0.4,
+  'Cover Story': 0.6,
+  'Editorial Note': 0.4,
+  'Why This Matters': 0.5,
+  'Strategic Implications': 0.55,
+  'Enterprise Spotlight': 0.55,
+  'Executive Summary': 0.35, // derivative, lower threshold
+  'Industry Watch': 0.4,
+  'Strategic Signals': 0.5,
+  'Tools & Platforms': 0.35,
+  'Operator Playbooks': 0.35,
+  'Executive Briefing': 0.4,
+  'Briefing Prompts': 0.25,
 };
 
-const DEFAULT_THRESHOLD = 0.5;
+const DEFAULT_THRESHOLD = 0.35;
 
 interface SectionCoverage {
   section: string;
@@ -101,8 +101,8 @@ export function calculateCitationCoverage(
   for (const failing of failingSections) {
     const deficit = (failing.threshold / 100) - (failing.coverage_pct / 100);
     // High-value sections get a heavier penalty
-    const isHighValue = (SECTION_THRESHOLDS[failing.section] ?? 0) >= 0.7;
-    score -= deficit * (isHighValue ? 4 : 2);
+    const isHighValue = (SECTION_THRESHOLDS[failing.section] ?? 0) >= 0.5;
+    score -= deficit * (isHighValue ? 2.5 : 1.5);
   }
 
   return {

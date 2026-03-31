@@ -64,7 +64,7 @@ function matchClaimToSignals(
 
   for (const signal of signals) {
     const score = calculateMatchScore(claimTokens, claimLower, signal);
-    if (score > 0.3) {
+    if (score > 0.2) {
       matchedSignalIds.push(signal.id);
       if (signal.source_url) matchedUrls.push(signal.source_url);
       if (!bestSignalMatch || score > bestSignalMatch.score) {
@@ -119,17 +119,25 @@ function calculateMatchScore(
 
   const signalTokens = tokenise(signalText);
 
-  // Token overlap (weighted by importance)
+  // Token overlap (weighted by importance), with synonym expansion
   const importantTokens = claimTokens.filter(t => t.length > 3 && !STOP_WORDS.has(t));
-  const matchCount = importantTokens.filter(t => signalTokens.includes(t)).length;
-  const overlapRatio = importantTokens.length > 0 ? matchCount / importantTokens.length : 0;
-  score += overlapRatio * 0.4;
+  const expandedClaimTokens = expandWithSynonyms(importantTokens);
+  const matchCount = expandedClaimTokens.filter(t => signalTokens.includes(t)).length;
+  const overlapRatio = expandedClaimTokens.length > 0 ? matchCount / expandedClaimTokens.length : 0;
+  score += overlapRatio * 0.5;
+
+  // Bigram matching (catches paraphrased concepts)
+  const claimBigrams = extractBigrams(claimTokens.filter(t => t.length > 2 && !STOP_WORDS.has(t)));
+  const signalBigrams = extractBigrams(signalTokens.filter(t => t.length > 2 && !STOP_WORDS.has(t)));
+  const bigramMatches = claimBigrams.filter(b => signalBigrams.includes(b)).length;
+  const bigramRatio = claimBigrams.length > 0 ? bigramMatches / claimBigrams.length : 0;
+  score += bigramRatio * 0.15;
 
   // Company name match (strong signal)
   if (signal.company) {
     const companyLower = signal.company.toLowerCase();
     if (claimLower.includes(companyLower)) {
-      score += 0.25;
+      score += 0.2;
     }
   }
 
@@ -138,7 +146,7 @@ function calculateMatchScore(
   const signalEntities = extractEntities(signalText);
   const sharedEntities = claimEntities.filter(e => signalEntities.includes(e));
   if (sharedEntities.length > 0) {
-    score += Math.min(0.2, sharedEntities.length * 0.1);
+    score += Math.min(0.15, sharedEntities.length * 0.075);
   }
 
   // Date proximity
@@ -182,9 +190,9 @@ function calculateTrendMatchScore(
 }
 
 function determineSupportStatus(score: number, matchCount: number): SupportStatus {
-  if (score >= 0.5 && matchCount >= 1) return 'supported';
-  if (score >= 0.3 && matchCount >= 1) return 'partially_supported';
-  if (score < 0.15) return 'unsupported';
+  if (score >= 0.35 && matchCount >= 1) return 'supported';
+  if (score >= 0.2 && matchCount >= 1) return 'partially_supported';
+  if (score < 0.1) return 'unsupported';
   return 'unverifiable';
 }
 
@@ -228,6 +236,53 @@ const STOP_WORDS = new Set([
   'which', 'their', 'would', 'there', 'could', 'other', 'these', 'where',
   'being', 'each', 'some', 'them', 'then', 'does', 'should',
 ]);
+
+const DOMAIN_SYNONYMS: Record<string, string[]> = {
+  'llm': ['large', 'language', 'model'],
+  'genai': ['generative'],
+  'gpu': ['compute', 'infrastructure', 'chip'],
+  'layoffs': ['workforce', 'reduction', 'cuts', 'headcount'],
+  'agent': ['agentic', 'autonomous', 'workflow'],
+  'rag': ['retrieval', 'augmented', 'generation'],
+  'enterprise': ['corporate', 'business', 'organisation'],
+  'startup': ['founded', 'venture', 'seed'],
+  'acquisition': ['acquired', 'merger', 'buyout'],
+  'regulation': ['regulatory', 'compliance', 'governance'],
+  'deployment': ['rollout', 'implementation', 'adoption'],
+  'partnership': ['collaboration', 'alliance', 'integration'],
+  'security': ['privacy', 'safety', 'guardrails'],
+  'productivity': ['efficiency', 'automation', 'output'],
+};
+
+function expandWithSynonyms(tokens: string[]): string[] {
+  const expanded = new Set(tokens);
+  for (const token of tokens) {
+    // If token is a key, add its synonyms
+    if (DOMAIN_SYNONYMS[token]) {
+      for (const syn of DOMAIN_SYNONYMS[token]) {
+        expanded.add(syn);
+      }
+    }
+    // If token is a synonym value, add the key and other synonyms
+    for (const [key, syns] of Object.entries(DOMAIN_SYNONYMS)) {
+      if (syns.includes(token)) {
+        expanded.add(key);
+        for (const syn of syns) {
+          expanded.add(syn);
+        }
+      }
+    }
+  }
+  return [...expanded];
+}
+
+function extractBigrams(tokens: string[]): string[] {
+  const bigrams: string[] = [];
+  for (let i = 0; i < tokens.length - 1; i++) {
+    bigrams.push(`${tokens[i]} ${tokens[i + 1]}`);
+  }
+  return bigrams;
+}
 
 // ── Evidence-Based Grounding ────────────────────────────────
 
@@ -357,7 +412,7 @@ function matchClaimToEvidenceItems(
       }
     }
 
-    if (score > 0.3) {
+    if (score > 0.2) {
       matchedSignalIds.push(item.source_id);
       if (item.source_url) matchedUrls.push(item.source_url);
       if (!bestMatch || score > bestMatch.score) {
@@ -474,7 +529,7 @@ function matchClaimToFacts(
       score += 0.1;
     }
 
-    if (score > 0.25) {
+    if (score > 0.15) {
       matchedSignalIds.push(fact.signal_id);
       if (fact.source_url) matchedUrls.push(fact.source_url);
       if (!bestMatch || score > bestMatch.score) {

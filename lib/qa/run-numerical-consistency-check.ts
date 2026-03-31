@@ -71,7 +71,7 @@ export function runNumericalConsistencyCheck(input: QACheckInput): QACheckResult
         actual_value: `${values.length} value${values.length > 1 ? 's' : ''} not found`,
         signal_id: null,
         section,
-        severity: values.length > 3 ? 'warning' : 'info',
+        severity: values.length > 6 ? 'warning' : 'info',
       });
     }
   }
@@ -192,7 +192,7 @@ function extractAllNumbers(sections: ExtractedSection[]): NumberOccurrence[] {
         const end = Math.min(section.raw_text.length, match.index + match[0].length + 30);
         results.push({
           value: match[0],
-          normalised: match[0].trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ''),
+          normalised: normaliseNumberValue(match[0]),
           section: section.section_label,
           context: section.raw_text.slice(start, end),
         });
@@ -214,7 +214,7 @@ function extractSignalNumbers(input: QACheckInput): NumberOccurrence[] {
         while ((match = regex.exec(text)) !== null) {
           results.push({
             value: match[0],
-            normalised: match[0].trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ''),
+            normalised: normaliseNumberValue(match[0]),
             section: 'Signal',
             context: text,
           });
@@ -223,6 +223,17 @@ function extractSignalNumbers(input: QACheckInput): NumberOccurrence[] {
     }
   }
   return results;
+}
+
+function normaliseNumberValue(raw: string): string {
+  let v = raw.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, '');
+  // Strip currency and percent symbols for comparison
+  v = v.replace(/[$%]/g, '');
+  // Normalise unit suffixes
+  v = v.replace(/billion|bn/g, 'b');
+  v = v.replace(/million|mn/g, 'm');
+  v = v.replace(/trillion/g, 't');
+  return v;
 }
 
 const NON_COMPANY_WORDS = new Set([

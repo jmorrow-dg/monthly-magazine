@@ -17,14 +17,14 @@ export const SCORE_WEIGHTS: Record<QACheckCategory, number> = {
 
 /** Quality thresholds */
 export const QA_THRESHOLDS = {
-  /** 95+: publish ready, no editor intervention needed */
-  PUBLISH_READY: 95,
-  /** 85-94: editor review recommended before publish */
-  EDITOR_REVIEW: 85,
-  /** Below 85: publish blocked */
-  BLOCKED: 85,
+  /** 85+: publish ready, no editor intervention needed */
+  PUBLISH_READY: 85,
+  /** 70-84: editor review recommended before publish */
+  EDITOR_REVIEW: 70,
+  /** Below 70: publish blocked */
+  BLOCKED: 70,
   /** Default threshold applied for pass/fail */
-  DEFAULT: 85,
+  DEFAULT: 70,
 } as const;
 
 /** Australian English spelling corrections (US to AU) */

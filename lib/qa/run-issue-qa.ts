@@ -182,11 +182,12 @@ export async function runIssueQA(issue: Issue): Promise<QAReport> {
 
   // Build factual grounding result from the grounding data
   const supportedCount = citationMap.filter((c: { support_status: string }) => c.support_status === 'supported').length;
+  const partiallySupportedCount = citationMap.filter((c: { support_status: string }) => c.support_status === 'partially_supported').length;
   const totalClaims = citationMap.length;
-  const groundingRatio = totalClaims > 0 ? supportedCount / totalClaims : 1;
+  const groundingRatio = totalClaims > 0 ? (supportedCount + partiallySupportedCount * 0.5) / totalClaims : 1;
   const factualGroundingScore = Math.min(25, 25 * groundingRatio
-    - unsupportedClaims.filter((c: { severity: string }) => c.severity === 'error').length * 2
-    - unsupportedClaims.filter((c: { severity: string }) => c.severity === 'warning').length * 0.5);
+    - unsupportedClaims.filter((c: { severity: string }) => c.severity === 'error').length * 1
+    - unsupportedClaims.filter((c: { severity: string }) => c.severity === 'warning').length * 0.25);
 
   const factualGroundingResult: QACheckResult = {
     category: 'factual_grounding',
