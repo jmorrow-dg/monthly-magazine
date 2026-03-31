@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const issue = await getIssue(issueId);
 
-    if (!issue || issue.status !== 'published') {
+    if (!issue) {
       return {
         title: 'Issue Not Found | David & Goliath AI Intelligence Report',
       };
@@ -21,7 +21,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     const monthLabel = getMonthName(issue.month);
     const editionLabel = `Edition ${String(issue.edition).padStart(2, '0')}`;
-    const title = `${issue.cover_headline} | ${editionLabel} | David & Goliath AI Intelligence Report`;
+    const statusSuffix = issue.status !== 'published' ? ` [${issue.status.charAt(0).toUpperCase() + issue.status.slice(1)}]` : '';
+    const title = `${monthLabel} ${issue.year} ${editionLabel}${statusSuffix} | AI Intelligence Report | David & Goliath`;
     const description = issue.cover_subtitle
       || `${monthLabel} ${issue.year} edition of the David & Goliath AI Intelligence Report. Strategic AI insights for Australian operators.`;
 
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       openGraph: {
-        title: `${issue.cover_headline} - ${editionLabel}`,
+        title: `AI Intelligence Report ${monthLabel} ${issue.year} - ${editionLabel}`,
         description,
         type: 'article',
         siteName: 'David & Goliath',
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
       twitter: {
         card: 'summary_large_image',
-        title: `${issue.cover_headline} - ${editionLabel}`,
+        title: `AI Intelligence Report ${monthLabel} ${issue.year} - ${editionLabel}`,
         description,
       },
     };
