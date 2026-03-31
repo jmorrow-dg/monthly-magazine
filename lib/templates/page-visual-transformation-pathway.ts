@@ -43,7 +43,7 @@ export function renderTransformationPathway(): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(21)}
+    ${renderMagazineHeader(20)}
 
     <div style="margin-top: 52pt;">
       ${renderFigureCaption(4, 'The Transformation Pathway', 'Five stages from experimentation to AI-native operations.')}
@@ -105,7 +105,7 @@ export function renderTransformationPathway(): string {
       </div>
     </div>
 
-    ${renderMagazineFooter(21)}
+    ${renderMagazineFooter(20)}
   </div>
 </body>
 </html>`;

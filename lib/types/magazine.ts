@@ -22,14 +22,13 @@ export const SPREAD_LAYOUT: SpreadConfig[] = [
   { spreadIndex: 5,  leftPageNumber: 10, rightPageNumber: 11 },   // Strategic Implications + Adoption Curve
   { spreadIndex: 6,  leftPageNumber: 12, rightPageNumber: 13 },   // AI-Native Org + Capability Stack
   { spreadIndex: 7,  leftPageNumber: 14, rightPageNumber: 15 },   // Enterprise + Adoption Map
-  { spreadIndex: 8,  leftPageNumber: 16, rightPageNumber: 17 },   // Briefing Prompts + Industry Watch
-  { spreadIndex: 9,  leftPageNumber: 18, rightPageNumber: 19 },   // Tools + Section Divider (Playbooks)
-  { spreadIndex: 10, leftPageNumber: 20, rightPageNumber: 21 },   // Operator Playbook + Transformation Pathway
-  { spreadIndex: 11, leftPageNumber: 22, rightPageNumber: 23 },   // Playbook Continued + Strategic Signals
-  { spreadIndex: 12, leftPageNumber: 24, rightPageNumber: null },  // D&G Closing (single)
+  { spreadIndex: 8,  leftPageNumber: 16, rightPageNumber: 17 },   // Briefing Prompts + Tools + Industry Watch
+  { spreadIndex: 9,  leftPageNumber: 18, rightPageNumber: 19 },   // Section Divider (Playbooks) + All 3 Playbooks
+  { spreadIndex: 10, leftPageNumber: 20, rightPageNumber: 21 },   // Transformation Pathway + Strategic Signals
+  { spreadIndex: 11, leftPageNumber: 22, rightPageNumber: null },  // D&G Closing (single)
 ];
 
-export const TOTAL_PAGES = 24;
+export const TOTAL_PAGES = 22;
 export const TOTAL_SPREADS = SPREAD_LAYOUT.length;
 
 export const PAGE_LABELS = [
@@ -48,13 +47,11 @@ export const PAGE_LABELS = [
   'Capability Stack',               // 13
   'Enterprise AI',                  // 14
   'Adoption Map',                   // 15
-  'Operator Briefing Prompts',      // 16
+  'Briefing Prompts + Toolkit',     // 16
   'Industry Watch',                 // 17
-  'Tools Worth Watching',           // 18
-  'Operator Playbooks',             // 19 (divider)
-  'Operator Playbook',              // 20
-  'Transformation Pathway',         // 21
-  'Playbooks (Continued)',          // 22
-  'Strategic Signals',              // 23
-  'David & Goliath',                // 24 (closing)
+  'Operator Playbooks',             // 18 (divider)
+  'Operator Playbooks',             // 19
+  'Transformation Pathway',         // 20
+  'Strategic Signals',              // 21
+  'David & Goliath',                // 22 (closing)
 ] as const;

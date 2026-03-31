@@ -9,11 +9,9 @@ import { renderCoverStoryImplications } from '@/lib/templates/page-05-cover-stor
 import { renderImplications } from '@/lib/templates/page-06-strategic-implications';
 import { renderEnterprise } from '@/lib/templates/page-07-enterprise';
 import { renderAiNativeOrg } from '@/lib/templates/page-10-ai-native-org';
-import { renderBriefingPrompts } from '@/lib/templates/page-10-briefing-prompts';
+import { renderBriefingAndTools } from '@/lib/templates/page-10-briefing-prompts';
 import { renderIndustryWatch } from '@/lib/templates/page-08-industry-watch';
-import { renderTools } from '@/lib/templates/page-09-tools';
 import { renderPlaybooks } from '@/lib/templates/page-10-playbooks';
-import { renderPlaybooksContinued } from '@/lib/templates/page-11-playbooks-continued';
 import { renderStrategicSignals } from '@/lib/templates/page-12-strategic-signals';
 import { renderWhyThisMatters } from '@/lib/templates/page-13-personalized-insight';
 import { renderClosing } from '@/lib/templates/page-14-closing';
@@ -34,12 +32,10 @@ const PAGE_NAMES = [
   'Strategic Implications',
   'AI Native Organisation',
   'Enterprise AI Adoption',
-  'Operator Briefing Prompts',
+  'Briefing Prompts + Toolkit',
   'Industry Watch',
-  'Tools Worth Watching',
   'Playbooks Divider',
   'Operator Playbooks',
-  'More Playbooks',
   'Strategic Signals',
   'Closing',
 ];
@@ -124,14 +120,12 @@ function buildPageHtmls(issue: Issue): string[] {
     /* 9  */ renderImplications({ items: issue.implications_json || [], pullQuote: coverStory?.pull_quotes?.[4] }),
     /* 10 */ renderAiNativeOrg({ data: issue.ai_native_org_json || null }),
     /* 11 */ renderEnterprise({ items: issue.enterprise_json || [], pullQuote: coverStory?.pull_quotes?.[5] }),
-    /* 12 */ renderBriefingPrompts({ items: issue.briefing_prompts_json || [] }),
+    /* 12 */ renderBriefingAndTools({ items: issue.briefing_prompts_json || [], tools: issue.tools_json || [] }),
     /* 13 */ renderIndustryWatch({ items: issue.industry_watch_json || [] }),
-    /* 14 */ renderTools({ items: issue.tools_json || [] }),
-    /* 15 */ renderSectionDividerPage({ title: 'Operator Playbooks' }),
-    /* 16 */ renderPlaybooks({ items: issue.playbooks_json || [], pullQuote: coverStory?.pull_quotes?.[3] }),
-    /* 17 */ renderPlaybooksContinued({ items: issue.playbooks_json || [] }),
-    /* 18 */ renderStrategicSignals({ items: issue.strategic_signals_json || [] }),
-    /* 19 */ renderClosing({
+    /* 14 */ renderSectionDividerPage({ title: 'Operator Playbooks' }),
+    /* 15 */ renderPlaybooks({ items: issue.playbooks_json || [], pullQuote: coverStory?.pull_quotes?.[3] }),
+    /* 16 */ renderStrategicSignals({ items: issue.strategic_signals_json || [] }),
+    /* 17 */ renderClosing({
       edition: issue.edition,
       month,
       year: issue.year,

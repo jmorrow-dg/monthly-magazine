@@ -10,11 +10,9 @@ import { renderCoverStoryImplications } from '@/lib/templates/page-05-cover-stor
 import { renderImplications } from '@/lib/templates/page-06-strategic-implications';
 import { renderEnterprise } from '@/lib/templates/page-07-enterprise';
 import { renderAiNativeOrg } from '@/lib/templates/page-10-ai-native-org';
-import { renderBriefingPrompts } from '@/lib/templates/page-10-briefing-prompts';
+import { renderBriefingAndTools } from '@/lib/templates/page-10-briefing-prompts';
 import { renderIndustryWatch } from '@/lib/templates/page-08-industry-watch';
-import { renderTools } from '@/lib/templates/page-09-tools';
 import { renderPlaybooks } from '@/lib/templates/page-10-playbooks';
-import { renderPlaybooksContinued } from '@/lib/templates/page-11-playbooks-continued';
 import { renderStrategicSignals } from '@/lib/templates/page-12-strategic-signals';
 import { renderWhyThisMatters } from '@/lib/templates/page-13-personalized-insight';
 import { renderClosing } from '@/lib/templates/page-14-closing';
@@ -77,7 +75,7 @@ export async function GET(request: Request, context: RouteContext) {
 
     const coverStory = issue.cover_story_json;
 
-    // 24-page structure (5 data storytelling visuals)
+    // 22-page structure (5 data storytelling visuals)
     const pages = [
       /* 1  */ renderCover({
         headline: issue.cover_headline,
@@ -119,15 +117,13 @@ export async function GET(request: Request, context: RouteContext) {
       /* 13 */ renderCapabilityStack(),
       /* 14 */ renderEnterprise({ items: issue.enterprise_json || [], pullQuote: coverStory?.pull_quotes?.[5], regionalSignals: issue.regional_signals_json?.enterprise }),
       /* 15 */ renderAdoptionMap(),
-      /* 16 */ renderBriefingPrompts({ items: issue.briefing_prompts_json || [] }),
+      /* 16 */ renderBriefingAndTools({ items: issue.briefing_prompts_json || [], tools: issue.tools_json || [] }),
       /* 17 */ renderIndustryWatch({ items: issue.industry_watch_json || [] }),
-      /* 18 */ renderTools({ items: issue.tools_json || [] }),
-      /* 19 */ renderSectionDividerPage({ title: 'Operator Playbooks' }),
-      /* 20 */ renderPlaybooks({ items: issue.playbooks_json || [], pullQuote: coverStory?.pull_quotes?.[3] }),
-      /* 21 */ renderTransformationPathway(),
-      /* 22 */ renderPlaybooksContinued({ items: issue.playbooks_json || [] }),
-      /* 23 */ renderStrategicSignals({ items: issue.strategic_signals_json || [] }),
-      /* 24 */ renderClosing({ edition: issue.edition, month, year: issue.year, shareInsight: issue.cover_headline }),
+      /* 18 */ renderSectionDividerPage({ title: 'Operator Playbooks' }),
+      /* 19 */ renderPlaybooks({ items: issue.playbooks_json || [], pullQuote: coverStory?.pull_quotes?.[3] }),
+      /* 20 */ renderTransformationPathway(),
+      /* 21 */ renderStrategicSignals({ items: issue.strategic_signals_json || [] }),
+      /* 22 */ renderClosing({ edition: issue.edition, month, year: issue.year, shareInsight: issue.cover_headline }),
     ];
 
     // Render-time punctuation sanitisation (catches old content too)

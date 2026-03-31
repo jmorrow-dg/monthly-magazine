@@ -14,7 +14,7 @@ export function renderStrategicSignals(data: StrategicSignalsPageData): string {
 </head>
 <body>
   <div class="page">
-    ${renderMagazineHeader(23)}
+    ${renderMagazineHeader(21)}
 
     <div style="margin-top: 52pt;">
       ${renderIconLabel('strategic-signals', 'Strategic Signals')}
@@ -28,7 +28,7 @@ export function renderStrategicSignals(data: StrategicSignalsPageData): string {
     </div>
 
     ${footer}
-    ${renderMagazineFooter(23)}
+    ${renderMagazineFooter(21)}
   </div>
 </body>
 </html>`;
