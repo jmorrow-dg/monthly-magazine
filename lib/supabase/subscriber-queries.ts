@@ -20,8 +20,31 @@ export type CreateSubscriberInput = {
   company_size?: string | null;
 };
 
+/**
+ * Build insert/update payload with only columns that exist in the DB.
+ * The subscribers table may not have all optional profile columns yet.
+ */
+async function getTableColumns(): Promise<Set<string>> {
+  const supabase = getSupabase();
+  // Fetch a single row (or empty) to discover available columns
+  const { data } = await supabase.from('subscribers').select('*').limit(1);
+  if (data && data.length > 0) return new Set(Object.keys(data[0]));
+  // If no rows, try an insert-select to discover columns from the schema
+  // Fall back to the minimal known set
+  return new Set(['id', 'email', 'name', 'status', 'subscribed_at', 'unsubscribed_at']);
+}
+
+function pickFields(obj: Record<string, unknown>, columns: Set<string>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (columns.has(key)) result[key] = val;
+  }
+  return result;
+}
+
 export async function createSubscriber(input: CreateSubscriberInput): Promise<Subscriber> {
   const supabase = getSupabase();
+  const columns = await getTableColumns();
 
   const { data: existing } = await supabase
     .from('subscribers')
@@ -31,16 +54,17 @@ export async function createSubscriber(input: CreateSubscriberInput): Promise<Su
 
   if (existing) {
     if (existing.status === 'unsubscribed') {
+      const updatePayload = pickFields({
+        status: 'active',
+        unsubscribed_at: null,
+        name: input.name || existing.name,
+        role: input.role || existing.role,
+        industry: input.industry || existing.industry,
+        company_size: input.company_size || existing.company_size,
+      }, columns);
       const { data, error } = await supabase
         .from('subscribers')
-        .update({
-          status: 'active',
-          unsubscribed_at: null,
-          name: input.name || existing.name,
-          role: input.role || existing.role,
-          industry: input.industry || existing.industry,
-          company_size: input.company_size || existing.company_size,
-        })
+        .update(updatePayload)
         .eq('id', existing.id)
         .select()
         .single();
@@ -50,15 +74,19 @@ export async function createSubscriber(input: CreateSubscriberInput): Promise<Su
     throw new Error('Email is already subscribed');
   }
 
+  const insertPayload = pickFields({
+    email: input.email.toLowerCase().trim(),
+    name: input.name || null,
+    role: input.role || null,
+    industry: input.industry || null,
+    company_size: input.company_size || null,
+  }, columns);
+  // email is always required
+  insertPayload.email = input.email.toLowerCase().trim();
+
   const { data, error } = await supabase
     .from('subscribers')
-    .insert({
-      email: input.email.toLowerCase().trim(),
-      name: input.name || null,
-      role: input.role || null,
-      industry: input.industry || null,
-      company_size: input.company_size || null,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 
@@ -95,9 +123,12 @@ export async function updateSubscriberProfile(
   profile: { role?: string | null; industry?: string | null; company_size?: string | null },
 ): Promise<Subscriber> {
   const supabase = getSupabase();
+  const columns = await getTableColumns();
+  const safeProfile = pickFields(profile as Record<string, unknown>, columns);
+
   const { data, error } = await supabase
     .from('subscribers')
-    .update(profile)
+    .update(safeProfile)
     .eq('id', id)
     .select()
     .single();
@@ -110,6 +141,7 @@ export async function bulkUpsertSubscribers(
   subscribers: CreateSubscriberInput[],
 ): Promise<{ imported: number; updated: number; errors: string[] }> {
   const supabase = getSupabase();
+  const columns = await getTableColumns();
   const result = { imported: 0, updated: 0, errors: [] as string[] };
 
   for (const sub of subscribers) {
@@ -122,12 +154,13 @@ export async function bulkUpsertSubscribers(
         .single();
 
       if (existing) {
-        const updates: Record<string, string | null | undefined> = {};
-        if (sub.name) updates.name = sub.name;
-        if (sub.role) updates.role = sub.role;
-        if (sub.industry) updates.industry = sub.industry;
-        if (sub.company_size) updates.company_size = sub.company_size;
+        const rawUpdates: Record<string, string | null | undefined> = {};
+        if (sub.name) rawUpdates.name = sub.name;
+        if (sub.role) rawUpdates.role = sub.role;
+        if (sub.industry) rawUpdates.industry = sub.industry;
+        if (sub.company_size) rawUpdates.company_size = sub.company_size;
 
+        const updates = pickFields(rawUpdates as Record<string, unknown>, columns);
         if (Object.keys(updates).length > 0) {
           const { error } = await supabase
             .from('subscribers')
@@ -137,15 +170,18 @@ export async function bulkUpsertSubscribers(
         }
         result.updated++;
       } else {
+        const insertPayload = pickFields({
+          email,
+          name: sub.name || null,
+          role: sub.role || null,
+          industry: sub.industry || null,
+          company_size: sub.company_size || null,
+        }, columns);
+        insertPayload.email = email;
+
         const { error } = await supabase
           .from('subscribers')
-          .insert({
-            email,
-            name: sub.name || null,
-            role: sub.role || null,
-            industry: sub.industry || null,
-            company_size: sub.company_size || null,
-          });
+          .insert(insertPayload);
         if (error) throw error;
         result.imported++;
       }
