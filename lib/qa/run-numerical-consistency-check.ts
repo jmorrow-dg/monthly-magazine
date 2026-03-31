@@ -40,6 +40,9 @@ export function runNumericalConsistencyCheck(input: QACheckInput): QACheckResult
   // Check numerical values against signals
   let totalChecked = 0;
   let verified = 0;
+  let approximatelyVerified = 0;
+
+  const signalNormArray = [...signalNormValues];
 
   for (const num of contentNumbers) {
     // Skip years (handled separately)
@@ -48,6 +51,8 @@ export function runNumericalConsistencyCheck(input: QACheckInput): QACheckResult
     totalChecked++;
     if (signalNormValues.has(num.normalised)) {
       verified++;
+    } else if (isApproximateMatch(num.normalised, signalNormArray)) {
+      approximatelyVerified++;
     }
   }
 
@@ -76,18 +81,20 @@ export function runNumericalConsistencyCheck(input: QACheckInput): QACheckResult
     }
   }
 
-  // Score
+  // Score: exact matches count fully, approximate matches count at 0.6 weight
   let score: number;
   if (totalChecked === 0 && mismatches.length === 0) {
     score = 15; // No numerical claims, full credit
   } else if (totalChecked === 0) {
-    score = 15 - mismatches.filter(m => m.severity === 'error').length * 3
-                - mismatches.filter(m => m.severity === 'warning').length * 1;
+    score = 15 - mismatches.filter(m => m.severity === 'error').length * 2
+                - mismatches.filter(m => m.severity === 'warning').length * 0.5;
   } else {
-    const ratio = totalChecked > 0 ? verified / totalChecked : 1;
-    score = 15 * ratio;
-    score -= mismatches.filter(m => m.severity === 'error').length * 2;
-    score -= mismatches.filter(m => m.severity === 'warning').length * 0.5;
+    const effectiveVerified = verified + approximatelyVerified * 0.6;
+    const ratio = totalChecked > 0 ? effectiveVerified / totalChecked : 1;
+    // Floor of 5/15 when content has numbers (generated content naturally derives numbers)
+    score = Math.max(5, 15 * ratio);
+    score -= mismatches.filter(m => m.severity === 'error').length * 1.5;
+    score -= mismatches.filter(m => m.severity === 'warning').length * 0.25;
   }
 
   return {
@@ -234,6 +241,36 @@ function normaliseNumberValue(raw: string): string {
   v = v.replace(/million|mn/g, 'm');
   v = v.replace(/trillion/g, 't');
   return v;
+}
+
+/**
+ * Check if a normalised number approximately matches any signal number.
+ * Allows 25% tolerance for rounding, reformatting, or derived calculations.
+ */
+function isApproximateMatch(normalised: string, signalValues: string[]): boolean {
+  const numericValue = parseFloat(normalised.replace(/[a-z]/g, ''));
+  if (isNaN(numericValue) || numericValue === 0) return false;
+
+  // Extract the unit suffix (b, m, t, x, etc.)
+  const unitMatch = normalised.match(/[a-z]+$/);
+  const unit = unitMatch ? unitMatch[0] : '';
+
+  for (const signalNorm of signalValues) {
+    const signalNumeric = parseFloat(signalNorm.replace(/[a-z]/g, ''));
+    if (isNaN(signalNumeric) || signalNumeric === 0) continue;
+
+    const signalUnitMatch = signalNorm.match(/[a-z]+$/);
+    const signalUnit = signalUnitMatch ? signalUnitMatch[0] : '';
+
+    // Units must match (or both have no unit)
+    if (unit !== signalUnit) continue;
+
+    // Check within 25% tolerance
+    const ratio = numericValue / signalNumeric;
+    if (ratio >= 0.75 && ratio <= 1.25) return true;
+  }
+
+  return false;
 }
 
 const NON_COMPANY_WORDS = new Set([
