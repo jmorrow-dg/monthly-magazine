@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: 'D' },
   { href: '/admin/issues', label: 'Issues', icon: 'I' },
   { href: '/admin/generate', label: 'New Issue', icon: '+' },
+  { href: '/admin/carousels', label: 'Carousels', icon: 'C' },
   { href: '/admin/intelligence', label: 'Intelligence', icon: '\u2726' },
   { href: '/admin/subscribers', label: 'Subscribers', icon: 'S' },
 ];

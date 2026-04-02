@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = ['/', '/api/auth', '/issues', '/latest'];
-const PUBLIC_PREFIXES = ['/issues/'];
+const PUBLIC_PREFIXES = ['/issues/', '/api/cron/'];
 const STATIC_PREFIXES = ['/_next', '/images', '/favicon.ico'];
 
 export function middleware(request: NextRequest) {

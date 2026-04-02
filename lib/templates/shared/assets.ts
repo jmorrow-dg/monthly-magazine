@@ -1,41 +1,47 @@
+/**
+ * Asset loading for carousel slide templates.
+ *
+ * Logo: David & Goliath transparent PNG (RGBA, no background).
+ * Always reads fresh from disk to avoid stale caches after asset updates.
+ */
+
 import fs from 'fs';
 import path from 'path';
 
-let _logoBase64: string | null = null;
-let _bgBase64: string | null = null;
-
-function loadAsset(filename: string): string {
+function resolveAssetPath(filename: string): string {
   const candidates = [
     path.join(process.cwd(), 'public', 'images', filename),
     path.join(__dirname, '..', '..', '..', 'public', 'images', filename),
   ];
 
   for (const filePath of candidates) {
-    try {
-      const buffer = fs.readFileSync(filePath);
-      return buffer.toString('base64');
-    } catch {
-      continue;
-    }
+    if (fs.existsSync(filePath)) return filePath;
   }
 
-  throw new Error(`Asset not found: ${filename}`);
+  throw new Error(`Asset not found: ${filename}. Searched: ${candidates.join(', ')}`);
 }
 
+function loadAssetBase64(filename: string): string {
+  const filePath = resolveAssetPath(filename);
+  const buffer = fs.readFileSync(filePath);
+  return buffer.toString('base64');
+}
+
+/**
+ * DG transparent logo as base64 string.
+ * File: public/images/dg-logo.png (RGBA PNG, transparent background).
+ */
 export function getDgLogoBase64(): string {
-  if (!_logoBase64) {
-    _logoBase64 = loadAsset('dg-logo.png');
-  }
-  return _logoBase64;
+  return loadAssetBase64('dg-logo.png');
 }
 
 export function getGoldCurvesBgBase64(): string {
-  if (!_bgBase64) {
-    _bgBase64 = loadAsset('gold-curves-bg.jpg');
-  }
-  return _bgBase64;
+  return loadAssetBase64('gold-curves-bg.jpg');
 }
 
+/**
+ * DG transparent logo as a data URI for embedding in HTML templates.
+ */
 export function dgLogoDataUri(): string {
   return `data:image/png;base64,${getDgLogoBase64()}`;
 }
