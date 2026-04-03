@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { SPREAD_LAYOUT, PAGE_LABELS } from '@/lib/types/magazine';
+import type { SpreadConfig } from '@/lib/types/magazine';
 
 type Props = {
   pageHtmls: (string | null)[];
@@ -10,10 +10,12 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
+  spreadLayout: SpreadConfig[];
+  pageLabels: string[];
 };
 
-function getSpreadForPage(pageNumber: number): number {
-  return SPREAD_LAYOUT.findIndex(
+function getSpreadForPage(pageNumber: number, spreadLayout: SpreadConfig[]): number {
+  return spreadLayout.findIndex(
     (s) => s.leftPageNumber === pageNumber || s.rightPageNumber === pageNumber
   );
 }
@@ -44,7 +46,7 @@ function PageThumb({ pageIndex, isActive }: { pageIndex: number; isActive: boole
   );
 }
 
-export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, isOpen, onClose, isMobile }: Props) {
+export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, isOpen, onClose, isMobile, spreadLayout, pageLabels }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, 
             <div className="grid grid-cols-4 gap-3">
               {pageHtmls.map((html, i) => {
                 if (!html) return null;
-                const spreadIdx = getSpreadForPage(i + 1);
+                const spreadIdx = getSpreadForPage(i + 1, spreadLayout);
                 const isActive = spreadIdx === currentSpread;
                 return (
                   <button
@@ -83,7 +85,7 @@ export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, 
                   >
                     <PageThumb pageIndex={i} isActive={isActive} />
                     <div className={`text-[8px] mt-1 leading-tight ${isActive ? 'text-[#B8860B]' : 'text-[#888888]'}`}>
-                      {PAGE_LABELS[i]}
+                      {pageLabels[i]}
                     </div>
                   </button>
                 );
@@ -110,7 +112,7 @@ export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, 
         <div className="p-3 space-y-1">
           {pageHtmls.map((html, i) => {
             if (!html) return null;
-            const spreadIdx = getSpreadForPage(i + 1);
+            const spreadIdx = getSpreadForPage(i + 1, spreadLayout);
             const isActive = spreadIdx === currentSpread;
             return (
               <button
@@ -123,7 +125,7 @@ export default function TableOfContents({ pageHtmls, currentSpread, onNavigate, 
                 <PageThumb pageIndex={i} isActive={isActive} />
                 <div className="text-left min-w-0">
                   <div className={`text-xs font-medium truncate ${isActive ? 'text-[#B8860B]' : 'text-white'}`}>
-                    {PAGE_LABELS[i]}
+                    {pageLabels[i]}
                   </div>
                   <div className="text-[10px] text-[#555555]">Page {i + 1}</div>
                 </div>

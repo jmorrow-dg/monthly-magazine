@@ -22,8 +22,21 @@ import { renderCapabilityStack } from '@/lib/templates/page-visual-capability-st
 import { renderAdoptionMap } from '@/lib/templates/page-visual-adoption-map';
 import { renderTransformationPathway } from '@/lib/templates/page-visual-transformation-pathway';
 import { renderGlobalLandscape } from '@/lib/templates/page-visual-global-landscape';
+import {
+  renderWeeklyCover,
+  renderWeeklyContentsEditorial,
+  renderWeeklyLeadStory,
+  renderWeeklyKeySignals,
+  renderWeeklyImplications,
+  renderWeeklyEnterpriseIndustry,
+  renderWeeklyExecutiveBriefing,
+  renderWeeklyOperatorsToolkit,
+  renderWeeklyStrategicOutlook,
+  renderWeeklyClosing,
+} from '@/lib/templates/weekly';
 import { monthName, editionLabel as buildEditionLabel } from '@/lib/utils/format-date';
 import { sanitiseDashes } from '@/lib/utils/sanitise-dashes';
+import type { Issue } from '@/lib/types/issue';
 
 type RouteContext = { params: Promise<{ issueId: string }> };
 
@@ -73,58 +86,9 @@ export async function GET(request: Request, context: RouteContext) {
     const month = monthName(issue.month);
     const label = issue.cover_edition_label || buildEditionLabel(issue.edition, issue.month, issue.year);
 
-    const coverStory = issue.cover_story_json;
-
-    // 22-page structure (5 data storytelling visuals)
-    const pages = [
-      /* 1  */ renderCover({
-        headline: issue.cover_headline,
-        subtitle: issue.cover_subtitle,
-        editionLabel: label,
-        coverImageUrl: issue.cover_image_url,
-        teaserSections: [
-          'Executive Briefing',
-          'Cover Story Analysis',
-          'Strategic Implications',
-          'Industry Watch',
-          'Operator Playbooks',
-          'Strategic Signals',
-        ],
-      }),
-      /* 2  */ renderEditorial({ note: issue.editorial_note || '', month, edition: issue.edition }),
-      /* 3  */ renderExecutiveBriefing({ items: issue.executive_briefing_json || [], coverHeadline: issue.cover_headline }),
-      /* 4  */ renderGlobalLandscape({ regions: issue.global_landscape_json?.regions }),
-      /* 5  */ renderWhyThisMatters({ content: issue.why_this_matters || '' }),
-      /* 6  */ renderSectionDividerPage({ title: 'Cover Story', subtitle: issue.cover_headline }),
-      /* 7  */ renderCoverStoryIntro({
-        headline: coverStory?.headline || issue.cover_headline,
-        subheadline: coverStory?.subheadline || '',
-        introduction: coverStory?.introduction || '',
-        pullQuote: coverStory?.pull_quotes?.[0],
-      }),
-      /* 8  */ renderCoverStoryAnalysis({
-        analysis: coverStory?.analysis || '',
-        pullQuotes: coverStory?.pull_quotes?.slice(1, 3) || [],
-      }),
-      /* 9  */ renderCoverStoryImplications({
-        strategicImplications: coverStory?.strategic_implications || '',
-        pullQuotes: coverStory?.pull_quotes?.slice(3, 5) || [],
-        evidence: coverStory?.evidence,
-      }),
-      /* 10 */ renderImplications({ items: issue.implications_json || [], pullQuote: coverStory?.pull_quotes?.[4], regionalSignals: issue.regional_signals_json?.implications }),
-      /* 11 */ renderAdoptionCurve(),
-      /* 12 */ renderAiNativeOrg({ data: issue.ai_native_org_json || null }),
-      /* 13 */ renderCapabilityStack(),
-      /* 14 */ renderEnterprise({ items: issue.enterprise_json || [], pullQuote: coverStory?.pull_quotes?.[5], regionalSignals: issue.regional_signals_json?.enterprise }),
-      /* 15 */ renderAdoptionMap(),
-      /* 16 */ renderBriefingAndTools({ items: issue.briefing_prompts_json || [], tools: issue.tools_json || [] }),
-      /* 17 */ renderIndustryWatch({ items: issue.industry_watch_json || [] }),
-      /* 18 */ renderSectionDividerPage({ title: 'Operator Playbooks' }),
-      /* 19 */ renderPlaybooks({ items: issue.playbooks_json || [], pullQuote: coverStory?.pull_quotes?.[3] }),
-      /* 20 */ renderTransformationPathway(),
-      /* 21 */ renderStrategicSignals({ items: issue.strategic_signals_json || [] }),
-      /* 22 */ renderClosing({ edition: issue.edition, month, year: issue.year, shareInsight: issue.cover_headline }),
-    ];
+    const pages = issue.format === 'weekly'
+      ? renderWeeklyPages(issue, label)
+      : renderMonthlyPages(issue, month, label);
 
     // Render-time punctuation sanitisation (catches old content too)
     const cleanPages = pages.map((html) => sanitiseDashes(html));
@@ -142,6 +106,7 @@ export async function GET(request: Request, context: RouteContext) {
         headline: issue.cover_headline,
         subtitle: issue.cover_subtitle,
         status: issue.status,
+        format: issue.format || 'monthly',
       },
     };
 
@@ -163,4 +128,138 @@ export async function GET(request: Request, context: RouteContext) {
     console.error('Failed to render issue:', error);
     return NextResponse.json({ error: 'Failed to render issue' }, { status: 500 });
   }
+}
+
+// ── Monthly/Quarterly page assembly (22 pages) ──────────────────
+
+function renderMonthlyPages(issue: Issue, month: string, label: string): string[] {
+  const coverStory = issue.cover_story_json;
+
+  return [
+    /* 1  */ renderCover({
+      headline: issue.cover_headline,
+      subtitle: issue.cover_subtitle,
+      editionLabel: label,
+      coverImageUrl: issue.cover_image_url,
+      teaserSections: [
+        'Executive Briefing',
+        'Cover Story Analysis',
+        'Strategic Implications',
+        'Industry Watch',
+        'Operator Playbooks',
+        'Strategic Signals',
+      ],
+    }),
+    /* 2  */ renderEditorial({ note: issue.editorial_note || '', month, edition: issue.edition }),
+    /* 3  */ renderExecutiveBriefing({ items: issue.executive_briefing_json || [], coverHeadline: issue.cover_headline }),
+    /* 4  */ renderGlobalLandscape({ regions: issue.global_landscape_json?.regions }),
+    /* 5  */ renderWhyThisMatters({ content: issue.why_this_matters || '' }),
+    /* 6  */ renderSectionDividerPage({ title: 'Cover Story', subtitle: issue.cover_headline }),
+    /* 7  */ renderCoverStoryIntro({
+      headline: coverStory?.headline || issue.cover_headline,
+      subheadline: coverStory?.subheadline || '',
+      introduction: coverStory?.introduction || '',
+      pullQuote: coverStory?.pull_quotes?.[0],
+    }),
+    /* 8  */ renderCoverStoryAnalysis({
+      analysis: coverStory?.analysis || '',
+      pullQuotes: coverStory?.pull_quotes?.slice(1, 3) || [],
+    }),
+    /* 9  */ renderCoverStoryImplications({
+      strategicImplications: coverStory?.strategic_implications || '',
+      pullQuotes: coverStory?.pull_quotes?.slice(3, 5) || [],
+      evidence: coverStory?.evidence,
+    }),
+    /* 10 */ renderImplications({ items: issue.implications_json || [], pullQuote: coverStory?.pull_quotes?.[4], regionalSignals: issue.regional_signals_json?.implications }),
+    /* 11 */ renderAdoptionCurve(),
+    /* 12 */ renderAiNativeOrg({ data: issue.ai_native_org_json || null }),
+    /* 13 */ renderCapabilityStack(),
+    /* 14 */ renderEnterprise({ items: issue.enterprise_json || [], pullQuote: coverStory?.pull_quotes?.[5], regionalSignals: issue.regional_signals_json?.enterprise }),
+    /* 15 */ renderAdoptionMap(),
+    /* 16 */ renderBriefingAndTools({ items: issue.briefing_prompts_json || [], tools: issue.tools_json || [] }),
+    /* 17 */ renderIndustryWatch({ items: issue.industry_watch_json || [] }),
+    /* 18 */ renderSectionDividerPage({ title: 'Operator Playbooks' }),
+    /* 19 */ renderPlaybooks({ items: issue.playbooks_json || [], pullQuote: coverStory?.pull_quotes?.[3] }),
+    /* 20 */ renderTransformationPathway(),
+    /* 21 */ renderStrategicSignals({ items: issue.strategic_signals_json || [] }),
+    /* 22 */ renderClosing({ edition: issue.edition, month, year: issue.year, shareInsight: issue.cover_headline }),
+  ];
+}
+
+// ── Weekly page assembly (10 pages) ─────────────────────────────
+
+function renderWeeklyPages(issue: Issue, label: string): string[] {
+  const weekRange = issue.week_start && issue.week_end
+    ? `${formatWeekDate(issue.week_start)} - ${formatWeekDate(issue.week_end)}`
+    : monthName(issue.month) + ' ' + issue.year;
+
+  const coverStory = issue.cover_story_json;
+  const leadBody = coverStory
+    ? [coverStory.introduction, coverStory.analysis].filter(Boolean).join('\n\n')
+    : '';
+
+  // Collect regional signals for outlook page
+  const allRegionalSignals = [
+    ...(issue.regional_signals_json?.implications || []),
+    ...(issue.regional_signals_json?.enterprise || []),
+  ];
+
+  return [
+    /* 1  */ renderWeeklyCover({
+      headline: issue.cover_headline,
+      subtitle: issue.cover_subtitle,
+      editionLabel: label,
+      weekRange,
+      coverImageUrl: issue.cover_image_url,
+    }),
+    /* 2  */ renderWeeklyContentsEditorial({
+      editorial: issue.editorial_note || '',
+      weekRange,
+      edition: issue.edition,
+    }),
+    /* 3  */ renderWeeklyLeadStory({
+      headline: coverStory?.headline || issue.cover_headline,
+      subheadline: coverStory?.subheadline,
+      body: leadBody,
+      pullQuote: coverStory?.pull_quotes?.[0],
+    }),
+    /* 4  */ renderWeeklyKeySignals({
+      items: (issue.strategic_signals_json || []).slice(0, 5).map(s => ({
+        headline: s.signal,
+        summary: s.context,
+        category: 'AI Strategy',
+        source_signal: s.source_signal,
+      })),
+    }),
+    /* 5  */ renderWeeklyImplications({
+      items: issue.implications_json || [],
+      pullQuote: coverStory?.pull_quotes?.[1],
+    }),
+    /* 6  */ renderWeeklyEnterpriseIndustry({
+      enterprise: issue.enterprise_json || [],
+      industryWatch: issue.industry_watch_json || [],
+    }),
+    /* 7  */ renderWeeklyExecutiveBriefing({
+      items: issue.executive_briefing_json || [],
+    }),
+    /* 8  */ renderWeeklyOperatorsToolkit({
+      playbook: issue.playbooks_json?.[0] || null,
+      tools: issue.tools_json || [],
+      prompts: issue.briefing_prompts_json || [],
+    }),
+    /* 9  */ renderWeeklyStrategicOutlook({
+      signals: issue.strategic_signals_json || [],
+      regionalSignals: allRegionalSignals.slice(0, 3),
+    }),
+    /* 10 */ renderWeeklyClosing({
+      edition: issue.edition,
+      weekRange,
+      year: issue.year,
+    }),
+  ];
+}
+
+function formatWeekDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
 }

@@ -2,6 +2,8 @@ import type { EvidencePackBundle } from '@/lib/types/evidence';
 
 export type IssueStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived';
 
+export type IssueFormat = 'weekly' | 'monthly' | 'quarterly';
+
 export type PageType = 'cover' | 'editorial' | 'cover-story-intro' | 'cover-story-analysis'
   | 'cover-story-implications' | 'strategic-implications' | 'enterprise' | 'industry-watch'
   | 'tools' | 'playbook' | 'playbook-continued' | 'strategic-signals'
@@ -148,8 +150,11 @@ export type Issue = {
   month: number;
   year: number;
   edition: number;
+  format: IssueFormat;
   status: IssueStatus;
   is_latest: boolean;
+  week_start: string | null;
+  week_end: string | null;
   cover_headline: string;
   cover_subtitle: string | null;
   cover_edition_label: string | null;

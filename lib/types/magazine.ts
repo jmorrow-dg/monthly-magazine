@@ -1,3 +1,5 @@
+import type { IssueFormat } from './issue';
+
 export type SpreadConfig = {
   spreadIndex: number;
   leftPageNumber: number | null;
@@ -13,7 +15,9 @@ export type MagazineViewerState = {
   isTransitioning: boolean;
 };
 
-export const SPREAD_LAYOUT: SpreadConfig[] = [
+// ── Monthly/Quarterly layout (22 pages, 12 spreads) ──────────────
+
+export const MONTHLY_SPREAD_LAYOUT: SpreadConfig[] = [
   { spreadIndex: 0,  leftPageNumber: 1,  rightPageNumber: null },  // Cover (single)
   { spreadIndex: 1,  leftPageNumber: 2,  rightPageNumber: 3 },    // Editorial + Executive Briefing
   { spreadIndex: 2,  leftPageNumber: 4,  rightPageNumber: 5 },    // Global Landscape + Why This Matters
@@ -28,10 +32,9 @@ export const SPREAD_LAYOUT: SpreadConfig[] = [
   { spreadIndex: 11, leftPageNumber: 22, rightPageNumber: null },  // D&G Closing (single)
 ];
 
-export const TOTAL_PAGES = 22;
-export const TOTAL_SPREADS = SPREAD_LAYOUT.length;
+export const MONTHLY_TOTAL_PAGES = 22;
 
-export const PAGE_LABELS = [
+export const MONTHLY_PAGE_LABELS = [
   'Cover',                          // 1
   'Editorial Note',                 // 2
   'Executive Briefing',             // 3
@@ -55,3 +58,53 @@ export const PAGE_LABELS = [
   'Strategic Signals',              // 21
   'David & Goliath',                // 22 (closing)
 ] as const;
+
+// ── Weekly layout (10 pages, 6 spreads) ──────────────────────────
+
+export const WEEKLY_SPREAD_LAYOUT: SpreadConfig[] = [
+  { spreadIndex: 0, leftPageNumber: 1,  rightPageNumber: null },  // Cover (single)
+  { spreadIndex: 1, leftPageNumber: 2,  rightPageNumber: 3 },    // Contents + Editorial | Lead Story
+  { spreadIndex: 2, leftPageNumber: 4,  rightPageNumber: 5 },    // Key Signals | Strategic Implications
+  { spreadIndex: 3, leftPageNumber: 6,  rightPageNumber: 7 },    // Enterprise + Industry | Executive Briefing
+  { spreadIndex: 4, leftPageNumber: 8,  rightPageNumber: 9 },    // Operator's Toolkit | Strategic Outlook
+  { spreadIndex: 5, leftPageNumber: 10, rightPageNumber: null },  // Closing (single)
+];
+
+export const WEEKLY_TOTAL_PAGES = 10;
+
+export const WEEKLY_PAGE_LABELS = [
+  'Cover',                          // 1
+  'This Week + Editorial',          // 2
+  'Lead Story',                     // 3
+  'Key Signals',                    // 4
+  'Strategic Implications',         // 5
+  'Enterprise + Industry',          // 6
+  'Executive Briefing',             // 7
+  "Operator's Toolkit",             // 8
+  'Strategic Outlook',              // 9
+  'David & Goliath',                // 10 (closing)
+] as const;
+
+// ── Format-aware helpers ─────────────────────────────────────────
+
+export function getSpreadLayout(format: IssueFormat): SpreadConfig[] {
+  return format === 'weekly' ? WEEKLY_SPREAD_LAYOUT : MONTHLY_SPREAD_LAYOUT;
+}
+
+export function getTotalPages(format: IssueFormat): number {
+  return format === 'weekly' ? WEEKLY_TOTAL_PAGES : MONTHLY_TOTAL_PAGES;
+}
+
+export function getTotalSpreads(format: IssueFormat): number {
+  return getSpreadLayout(format).length;
+}
+
+export function getPageLabels(format: IssueFormat): readonly string[] {
+  return format === 'weekly' ? WEEKLY_PAGE_LABELS : MONTHLY_PAGE_LABELS;
+}
+
+// Backward-compatible aliases for existing code
+export const SPREAD_LAYOUT = MONTHLY_SPREAD_LAYOUT;
+export const TOTAL_PAGES = MONTHLY_TOTAL_PAGES;
+export const TOTAL_SPREADS = MONTHLY_SPREAD_LAYOUT.length;
+export const PAGE_LABELS = MONTHLY_PAGE_LABELS;

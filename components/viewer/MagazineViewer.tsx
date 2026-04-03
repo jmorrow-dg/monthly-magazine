@@ -7,16 +7,22 @@ import LazyPageRenderer from './LazyPageRenderer';
 import SpreadNavigation from './SpreadNavigation';
 import TableOfContents from './TableOfContents';
 import ShareActions from './ShareActions';
-import { SPREAD_LAYOUT, TOTAL_SPREADS, TOTAL_PAGES } from '@/lib/types/magazine';
+import { getSpreadLayout, getTotalPages, getTotalSpreads, getPageLabels } from '@/lib/types/magazine';
+import type { IssueFormat } from '@/lib/types/issue';
 
 type MagazineViewerProps = {
   pageHtmls: (string | null)[];
   issueId?: string;
   headline?: string;
   subtitle?: string | null;
+  format?: IssueFormat;
 };
 
-export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle }: MagazineViewerProps) {
+export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle, format = 'monthly' }: MagazineViewerProps) {
+  const SPREAD_LAYOUT = getSpreadLayout(format);
+  const TOTAL_SPREADS = getTotalSpreads(format);
+  const TOTAL_PAGES = getTotalPages(format);
+  const PAGE_LABELS = getPageLabels(format);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -133,6 +139,8 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
           isOpen={tocOpen}
           onClose={() => setTocOpen(false)}
           isMobile={true}
+          spreadLayout={SPREAD_LAYOUT}
+          pageLabels={[...PAGE_LABELS]}
         />
         <div className="sticky top-0 z-10 bg-[#0a0a0a]/90 backdrop-blur-sm border-b border-[#222222] px-4 py-3 flex items-center justify-between">
           <Link href="/issues" className="text-[#B8860B] text-xs hover:underline">&larr; All Issues</Link>
@@ -180,6 +188,8 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
         isOpen={tocOpen}
         onClose={() => setTocOpen(false)}
         isMobile={false}
+        spreadLayout={SPREAD_LAYOUT}
+        pageLabels={[...PAGE_LABELS]}
       />
 
       {/* Top bar */}
@@ -283,6 +293,7 @@ export default function MagazineViewer({ pageHtmls, issueId, headline, subtitle 
       <div className="max-w-md mx-auto w-full pb-5 flex-shrink-0">
         <SpreadNavigation
           currentSpread={currentSpread}
+          totalSpreads={TOTAL_SPREADS}
           onPrev={goPrev}
           onNext={goNext}
           pageLabel=""

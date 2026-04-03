@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import MagazineViewer from './MagazineViewer';
 import ViewerSkeleton from '@/components/viewer/ViewerSkeleton';
+import type { IssueFormat } from '@/lib/types/issue';
 
 type ViewerClientProps = {
   issueId: string;
@@ -12,6 +13,7 @@ type ViewerClientProps = {
 type IssueMeta = {
   headline: string;
   subtitle: string | null;
+  format: IssueFormat;
 };
 
 export default function ViewerClient({ issueId }: ViewerClientProps) {
@@ -28,7 +30,7 @@ export default function ViewerClient({ issueId }: ViewerClientProps) {
         const data = await res.json();
         setPageHtmls(data.pages || []);
         if (data.issue) {
-          setIssueMeta({ headline: data.issue.headline, subtitle: data.issue.subtitle });
+          setIssueMeta({ headline: data.issue.headline, subtitle: data.issue.subtitle, format: data.issue.format || 'monthly' });
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load issue');
@@ -61,6 +63,7 @@ export default function ViewerClient({ issueId }: ViewerClientProps) {
       issueId={issueId}
       headline={issueMeta?.headline || ''}
       subtitle={issueMeta?.subtitle}
+      format={issueMeta?.format || 'monthly'}
     />
   );
 }

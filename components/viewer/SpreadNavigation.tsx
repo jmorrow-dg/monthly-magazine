@@ -1,15 +1,14 @@
 'use client';
 
-import { TOTAL_SPREADS } from '@/lib/types/magazine';
-
 type SpreadNavigationProps = {
   currentSpread: number;
+  totalSpreads: number;
   onPrev: () => void;
   onNext: () => void;
   pageLabel: string;
 };
 
-export default function SpreadNavigation({ currentSpread, onPrev, onNext, pageLabel }: SpreadNavigationProps) {
+export default function SpreadNavigation({ currentSpread, totalSpreads, onPrev, onNext, pageLabel }: SpreadNavigationProps) {
   return (
     <div className="flex items-center justify-between px-4 py-3">
       {/* Previous */}
@@ -27,7 +26,7 @@ export default function SpreadNavigation({ currentSpread, onPrev, onNext, pageLa
       {/* Page indicator */}
       <div className="flex items-center gap-4">
         <div className="flex gap-1.5">
-          {Array.from({ length: TOTAL_SPREADS }).map((_, i) => (
+          {Array.from({ length: totalSpreads }).map((_, i) => (
             <div
               key={i}
               className={`w-2 h-2 rounded-full transition-colors ${
@@ -42,7 +41,7 @@ export default function SpreadNavigation({ currentSpread, onPrev, onNext, pageLa
       {/* Next */}
       <button
         onClick={onNext}
-        disabled={currentSpread === TOTAL_SPREADS - 1}
+        disabled={currentSpread === totalSpreads - 1}
         className="w-10 h-10 rounded-full bg-[#222222] border border-[#333333] flex items-center justify-center text-white hover:border-[#B8860B] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         aria-label="Next spread"
       >
