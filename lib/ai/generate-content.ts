@@ -21,7 +21,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const SYSTEM = `You are an AI strategist writing for the David & Goliath AI Intelligence Report, a premium monthly intelligence publication for operators, founders, and executives navigating AI adoption globally. Your tone is authoritative, insightful, and practical. You write in Australian English (organisation, optimise, analyse, etc.). Draw signals from major AI labs, enterprise technology companies, global startups, infrastructure providers, and regulatory developments across North America, Europe, Asia, and emerging markets.
+const SYSTEM = `You are an AI strategist writing for the David & Goliath AI Intelligence Report, a premium weekly intelligence publication for operators, founders, and executives navigating AI adoption globally. Your tone is authoritative, insightful, and practical. You write in Australian English (organisation, optimise, analyse, etc.). Draw signals from major AI labs, enterprise technology companies, global startups, infrastructure providers, and regulatory developments across North America, Europe, Asia, and emerging markets.
 
 CRITICAL PUNCTUATION RULE: NEVER use em dashes (—), en dashes (–), or hyphens as punctuation (e.g. " - "). Use commas, semicolons, colons, or restructure the sentence instead. This applies to all text including pull quotes, descriptions, and editorial content.
 
@@ -568,7 +568,7 @@ export async function generateAiNativeOrg(
       ? `\n\nIntelligence signals:\n${formatSignalBlock(signalContext)}`
       : '';
 
-  const prompt = `Based on the cover story and strategic implications, generate content for "The AI Native Organisation" framework page. This page features a recurring five-layer model of the AI native organisation (Strategy, Workflow, Agent, Model, Infrastructure) with dynamic monthly content.
+  const prompt = `Based on the cover story and strategic implications, generate content for "The AI Native Organisation" framework page. This page features a recurring five-layer model of the AI native organisation (Strategy, Workflow, Agent, Model, Infrastructure) with dynamic weekly content.
 
 Cover Story: ${coverStory.headline}
 ${coverStory.subheadline}

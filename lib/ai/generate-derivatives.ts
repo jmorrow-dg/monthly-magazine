@@ -12,7 +12,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const SYSTEM = `You are writing derivative content for the David & Goliath AI Intelligence Report, a premium monthly publication for operators, founders, and executives. Write in Australian English. Do NOT use em dashes, en dashes, or hyphens as punctuation.`;
+const SYSTEM = `You are writing derivative content for the David & Goliath AI Intelligence Report, a premium weekly publication for operators, founders, and executives. Write in Australian English. Do NOT use em dashes, en dashes, or hyphens as punctuation.`;
 
 function issueContext(issue: Issue): string {
   const coverStory = issue.cover_story_json;
