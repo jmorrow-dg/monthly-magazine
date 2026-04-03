@@ -144,7 +144,7 @@ export const SLIDE_DIMENSIONS: Record<Platform, { width: number; height: number 
  * Distribution from USP Brand Document:
  * - Follow the account: 20%
  * - Leave a comment: 15%
- * - Monthly AI Intelligence Report signup: 15%
+ * - Weekly AI Intelligence Report signup: 15%
  * - Weekly 3-2-1 email brief signup: 15%
  * - Free 10-page AI Assessment: 15%
  * - Battler community/follow hook: 10%
@@ -158,7 +158,7 @@ export const SLIDE_DIMENSIONS: Record<Platform, { width: number; height: number 
 export const CTA_WEIGHTS: Array<{ variant: CTAVariant; weight: number; text: string; audience: 'battler' | 'operator' | 'both'; postTypes: ContentCategory[] }> = [
   { variant: 'follow', weight: 20, text: 'Follow @joshbuildswithai for more.', audience: 'both', postTypes: ['growth'] },
   { variant: 'comment', weight: 15, text: 'Drop your thoughts in the comments.', audience: 'both', postTypes: ['growth'] },
-  { variant: 'intelligence_report', weight: 15, text: 'Sign up for our monthly AI Intelligence Report. 600+ signals distilled into what actually matters. Link in bio.', audience: 'both', postTypes: ['bridge', 'authority'] },
+  { variant: 'intelligence_report', weight: 15, text: 'Subscribe to our weekly AI Intelligence Report. 200+ news pieces distilled into what actually matters. Link in bio.', audience: 'both', postTypes: ['bridge', 'authority'] },
   { variant: 'weekly_email', weight: 15, text: 'Get the weekly 3-2-1 AI brief straight to your inbox. Link in bio.', audience: 'both', postTypes: ['bridge'] },
   { variant: 'ai_assessment', weight: 15, text: 'If you run a business, get a free 10-page AI Assessment tailored to your operations. Link in bio.', audience: 'operator', postTypes: ['authority'] },
   { variant: 'battler_community', weight: 10, text: 'If you are a battler wanting to escape the 9-5 and build with AI, hit follow. Something is coming for you.', audience: 'battler', postTypes: ['growth', 'bridge'] },
