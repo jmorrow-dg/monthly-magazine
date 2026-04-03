@@ -66,6 +66,9 @@ export const createIssueSchema = z.object({
   edition: z.number().int().min(1),
   cover_headline: z.string().min(1).max(200).optional(),
   cover_subtitle: z.string().max(200).nullable().optional(),
+  format: z.enum(['weekly', 'monthly', 'quarterly']).optional(),
+  week_start: z.string().nullable().optional(),
+  week_end: z.string().nullable().optional(),
 });
 
 export const updateIssueSchema = z.object({

@@ -6,8 +6,9 @@ import IssueStatusBadge from '@/components/admin/IssueStatusBadge';
 import { SkeletonBlock } from '@/components/shared/Skeleton';
 import EmptyState from '@/components/shared/EmptyState';
 import { shortMonthName } from '@/lib/utils/format-date';
-import type { IssueSummary, IssueStatus } from '@/lib/types/issue';
-const FILTERS: { label: string; value: IssueStatus | 'all' }[] = [
+import type { IssueSummary, IssueStatus, IssueFormat } from '@/lib/types/issue';
+
+const STATUS_FILTERS: { label: string; value: IssueStatus | 'all' }[] = [
   { label: 'All', value: 'all' },
   { label: 'Draft', value: 'draft' },
   { label: 'Review', value: 'review' },
@@ -16,21 +17,41 @@ const FILTERS: { label: string; value: IssueStatus | 'all' }[] = [
   { label: 'Archived', value: 'archived' },
 ];
 
+const FORMAT_FILTERS: { label: string; value: IssueFormat | 'all' }[] = [
+  { label: 'All Formats', value: 'all' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Quarterly', value: 'quarterly' },
+];
+
+function formatBadge(format: IssueFormat) {
+  const styles: Record<IssueFormat, string> = {
+    weekly: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    monthly: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    quarterly: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  };
+  return styles[format] || styles.monthly;
+}
+
 export default function IssueListPage() {
   const [issues, setIssues] = useState<IssueSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<IssueStatus | 'all'>('all');
+  const [formatFilter, setFormatFilter] = useState<IssueFormat | 'all'>('all');
 
   useEffect(() => {
-    const params = filter !== 'all' ? `?status=${filter}` : '';
+    const params = new URLSearchParams();
+    if (filter !== 'all') params.set('status', filter);
+    if (formatFilter !== 'all') params.set('format', formatFilter);
+    const qs = params.toString() ? `?${params.toString()}` : '';
     setError('');
-    fetch(`/api/issues${params}`)
+    fetch(`/api/issues${qs}`)
       .then((r) => r.json())
       .then((data) => setIssues(data.issues || []))
       .catch(() => setError('Failed to load issues.'))
       .finally(() => setLoading(false));
-  }, [filter]);
+  }, [filter, formatFilter]);
 
   return (
     <div className="p-8">
@@ -45,20 +66,38 @@ export default function IssueListPage() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 mb-6">
-        {FILTERS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => { setFilter(f.value); setLoading(true); }}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              filter === f.value
-                ? 'bg-[#B8860B]/15 text-[#B8860B] border border-[#B8860B]/30'
-                : 'text-[#888888] hover:text-white hover:bg-[#222222]'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+      <div className="flex items-center gap-6 mb-6">
+        <div className="flex gap-1">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => { setFilter(f.value); setLoading(true); }}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                filter === f.value
+                  ? 'bg-[#B8860B]/15 text-[#B8860B] border border-[#B8860B]/30'
+                  : 'text-[#888888] hover:text-white hover:bg-[#222222]'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="w-px h-5 bg-[#333333]" />
+        <div className="flex gap-1">
+          {FORMAT_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => { setFormatFilter(f.value); setLoading(true); }}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                formatFilter === f.value
+                  ? 'bg-[#B8860B]/15 text-[#B8860B] border border-[#B8860B]/30'
+                  : 'text-[#888888] hover:text-white hover:bg-[#222222]'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
@@ -85,6 +124,7 @@ export default function IssueListPage() {
             <thead>
               <tr className="text-left text-[11px] text-[#888888] uppercase tracking-wider border-b border-[#333333]">
                 <th className="px-4 py-3">Edition</th>
+                <th className="px-4 py-3">Format</th>
                 <th className="px-4 py-3">Period</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Headline</th>
@@ -96,13 +136,22 @@ export default function IssueListPage() {
                 <tr key={issue.id} className="border-t border-[#2a2a2a] hover:bg-[#1C1C1C] transition-colors">
                   <td className="px-4 py-3">
                     <Link href={`/admin/issues/${issue.id}`} className="text-[#B8860B] font-semibold text-sm hover:underline inline-flex items-center gap-2">
-                      #{String(issue.edition).padStart(2, '0')}
+                      {issue.format === 'weekly' ? `W${issue.edition}` : `#${String(issue.edition).padStart(2, '0')}`}
                       {idx === 0 && filter === 'all' && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#B8860B]/10 text-[#B8860B] uppercase tracking-wider font-medium">Latest</span>
                       )}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-sm text-[#B0B0B0] whitespace-nowrap">{shortMonthName(issue.month)} {issue.year}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium capitalize ${formatBadge(issue.format || 'monthly')}`}>
+                      {issue.format || 'monthly'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-[#B0B0B0] whitespace-nowrap">
+                    {issue.format === 'weekly' && issue.week_start
+                      ? `${new Date(issue.week_start).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} - ${new Date(issue.week_end!).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`
+                      : `${shortMonthName(issue.month)} ${issue.year}`}
+                  </td>
                   <td className="px-4 py-3"><IssueStatusBadge status={issue.status} /></td>
                   <td className="px-4 py-3 text-sm text-white max-w-[300px] truncate">{issue.cover_headline}</td>
                   <td className="px-4 py-3 text-xs text-[#666666] text-right whitespace-nowrap">{new Date(issue.updated_at).toLocaleDateString()}</td>

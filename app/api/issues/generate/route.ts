@@ -36,6 +36,8 @@ export async function POST(request: Request) {
 
     const label = editionLabel(parsed.edition, parsed.month, parsed.year);
 
+    const issueFormat = parsed.format || 'monthly';
+
     const issue = await createIssue({
       month: parsed.month,
       year: parsed.year,
@@ -43,6 +45,9 @@ export async function POST(request: Request) {
       cover_headline: parsed.cover_headline || 'AI Intelligence Report',
       cover_subtitle: parsed.cover_subtitle || null,
       cover_edition_label: label,
+      format: issueFormat,
+      week_start: parsed.week_start || null,
+      week_end: parsed.week_end || null,
     });
 
     // Create 16 page rows

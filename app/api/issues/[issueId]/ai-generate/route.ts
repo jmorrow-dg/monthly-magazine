@@ -19,7 +19,21 @@ import {
   generateRegionalSignals,
   generateGlobalLandscape,
 } from '@/lib/ai/generate-content';
+import {
+  generateWeeklyLeadStory,
+  generateWeeklyImplications,
+  generateWeeklyEnterprise,
+  generateWeeklyIndustryWatch,
+  generateWeeklyTools,
+  generateWeeklyPlaybook,
+  generateWeeklyStrategicSignals,
+  generateWeeklyBriefingPrompts,
+  generateWeeklyExecutiveBriefing,
+  generateWeeklyEditorial,
+  generateWeeklyOutlookSignals,
+} from '@/lib/ai/generate-weekly-content';
 import { fetchMonthlySignals } from '@/lib/intelligence/fetch-signals';
+import { fetchWeeklySignals, buildWeeklySignalContext } from '@/lib/intelligence/fetch-weekly-signals';
 import { fetchMonthlyClusters, findCoverStoryCluster } from '@/lib/intelligence/fetch-clusters';
 import { fetchMonthlyTrends, findTopTrend } from '@/lib/intelligence/fetch-trends';
 import type { SignalContext } from '@/lib/intelligence/types';
@@ -56,6 +70,11 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const body = (await request.json()) as RequestBody;
+
+    // Weekly issues use a dedicated generation pipeline
+    if (issue.format === 'weekly') {
+      return generateWeeklyIssue(issueId, issue, body.instructions);
+    }
     const instructions = body.instructions;
 
     // Determine generation mode
@@ -283,6 +302,109 @@ export async function POST(request: Request, context: RouteContext) {
     console.error('AI generation failed:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Generation failed' },
+      { status: 500 },
+    );
+  }
+}
+
+// ── Weekly generation pipeline ─────────────────────────────────────────────
+
+async function generateWeeklyIssue(
+  issueId: string,
+  issue: Issue,
+  instructions?: string,
+): Promise<Response> {
+  try {
+    // Fetch signals for this week's date range
+    const feed = await fetchWeeklySignals(
+      issue.week_start || undefined,
+      issue.week_end || undefined,
+    );
+
+    if (feed.signals.length === 0) {
+      return NextResponse.json(
+        { error: `No scored signals found for week ${feed.week_start} to ${feed.week_end}. Ensure signals have been captured and scored.` },
+        { status: 404 },
+      );
+    }
+
+    const signalContext = buildWeeklySignalContext(feed);
+    const weekRange = `${feed.week_start} to ${feed.week_end}`;
+
+    // Step 1: Generate lead story first (everything else depends on it)
+    const leadStory = await generateWeeklyLeadStory(signalContext, instructions);
+
+    // Step 2: Generate implications + strategic signals in parallel
+    const [implications, strategicSignals] = await Promise.all([
+      generateWeeklyImplications(leadStory, signalContext, instructions),
+      generateWeeklyStrategicSignals(leadStory, [], signalContext, instructions),
+    ]);
+
+    // Step 3: Generate remaining sections in parallel
+    const [enterprise, industryWatch, tools, playbook, briefingPrompts, executiveBriefing, editorial, outlookSignals] = await Promise.all([
+      generateWeeklyEnterprise(leadStory, signalContext, instructions),
+      generateWeeklyIndustryWatch(leadStory, signalContext, instructions),
+      generateWeeklyTools(signalContext, instructions),
+      generateWeeklyPlaybook(leadStory, signalContext, instructions),
+      generateWeeklyBriefingPrompts(leadStory, signalContext, instructions),
+      generateWeeklyExecutiveBriefing(leadStory, implications, signalContext, instructions),
+      generateWeeklyEditorial(leadStory, weekRange, instructions),
+      generateWeeklyOutlookSignals(leadStory, strategicSignals, signalContext, instructions),
+    ]);
+
+    // Combine strategic signals (key signals page) + outlook signals (outlook page)
+    // Key signals page uses the main strategic signals
+    // Outlook page uses the forward-looking outlook signals
+
+    const updateData: Record<string, unknown> = {
+      cover_story_json: sanitiseDashesDeep(leadStory),
+      cover_headline: sanitiseDashes(leadStory.headline),
+      cover_subtitle: sanitiseDashes(leadStory.subheadline),
+      implications_json: sanitiseDashesDeep(implications),
+      enterprise_json: sanitiseDashesDeep(enterprise),
+      industry_watch_json: sanitiseDashesDeep(industryWatch),
+      tools_json: sanitiseDashesDeep(tools),
+      playbooks_json: sanitiseDashesDeep(playbook),
+      strategic_signals_json: sanitiseDashesDeep([...strategicSignals, ...outlookSignals]),
+      briefing_prompts_json: sanitiseDashesDeep(briefingPrompts),
+      executive_briefing_json: sanitiseDashesDeep(executiveBriefing),
+      editorial_note: sanitiseDashes(editorial),
+      generation_mode: 'signals',
+      source_signal_ids: feed.signals.map((s) => s.id),
+    };
+
+    const updated = await updateIssue(issueId, updateData);
+
+    // Auto-trigger QA (non-fatal)
+    let qaReport = null;
+    try {
+      if (updated) {
+        const report = await runIssueQA(updated);
+        await createQAReport(report);
+        await updateIssue(issueId, {
+          qa_score: report.qa_score,
+          qa_passed: report.qa_passed,
+          qa_status: report.qa_status,
+          qa_summary: report.summary,
+          last_qa_run_at: new Date().toISOString(),
+        } as Partial<Issue>);
+        qaReport = { qa_score: report.qa_score, qa_passed: report.qa_passed };
+      }
+    } catch (qaError) {
+      console.error('Weekly QA auto-trigger failed (non-fatal):', qaError);
+    }
+
+    return NextResponse.json({
+      issue: updated,
+      mode: 'weekly-signals',
+      signalCount: feed.total,
+      weekRange,
+      qa: qaReport,
+    });
+  } catch (error) {
+    console.error('Weekly generation failed:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Weekly generation failed' },
       { status: 500 },
     );
   }

@@ -1,5 +1,5 @@
 import { getSupabase } from './client';
-import type { Issue, IssueSummary, IssueStatus, IssuePage, IssueAsset, IssueReview } from '@/lib/types/issue';
+import type { Issue, IssueSummary, IssueStatus, IssueFormat, IssuePage, IssueAsset, IssueReview } from '@/lib/types/issue';
 import type { QAReport, QAReportRow } from '@/lib/types/qa';
 
 // ── Slug Utilities ──────────────────────────────────────────────────────────
@@ -24,6 +24,9 @@ export type CreateIssueInput = {
   cover_headline?: string;
   cover_subtitle?: string | null;
   cover_edition_label?: string | null;
+  format?: IssueFormat;
+  week_start?: string | null;
+  week_end?: string | null;
 };
 
 export async function createIssue(data: CreateIssueInput): Promise<Issue> {
@@ -41,6 +44,9 @@ export async function createIssue(data: CreateIssueInput): Promise<Issue> {
       cover_headline: data.cover_headline || 'AI Intelligence Report',
       cover_subtitle: data.cover_subtitle || null,
       cover_edition_label: data.cover_edition_label || null,
+      format: data.format || 'monthly',
+      week_start: data.week_start || null,
+      week_end: data.week_end || null,
     })
     .select()
     .single();
@@ -64,16 +70,20 @@ export async function getIssue(id: string): Promise<Issue | null> {
   return data as Issue;
 }
 
-export async function listIssues(status?: IssueStatus): Promise<IssueSummary[]> {
+export async function listIssues(status?: IssueStatus, format?: IssueFormat): Promise<IssueSummary[]> {
   const supabase = getSupabase();
   let query = supabase
     .from('issues')
-    .select('id, slug, title, month, year, edition, status, is_latest, cover_headline, cover_subtitle, cover_edition_label, published_at, updated_at')
+    .select('id, slug, title, month, year, edition, format, status, is_latest, cover_headline, cover_subtitle, cover_edition_label, week_start, week_end, published_at, updated_at')
     .order('year', { ascending: false })
-    .order('month', { ascending: false });
+    .order('month', { ascending: false })
+    .order('edition', { ascending: false });
 
   if (status) {
     query = query.eq('status', status);
+  }
+  if (format) {
+    query = query.eq('format', format);
   }
 
   const { data, error } = await query;

@@ -24,12 +24,20 @@
     "app/api/cron/carousel/route.ts": {
       "maxDuration": 300,
       "memory": 3009
+    },
+    "app/api/cron/weekly-magazine/route.ts": {
+      "maxDuration": 300,
+      "memory": 3009
     }
   },
   "crons": [
     {
       "path": "/api/cron/carousel",
       "schedule": "15 23 * * 0-4"
+    },
+    {
+      "path": "/api/cron/weekly-magazine",
+      "schedule": "0 20 * * 6"
     }
   ]
 }

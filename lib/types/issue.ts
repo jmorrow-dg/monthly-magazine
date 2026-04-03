@@ -216,11 +216,14 @@ export type IssueSummary = {
   month: number;
   year: number;
   edition: number;
+  format: IssueFormat;
   status: IssueStatus;
   is_latest: boolean;
   cover_headline: string;
   cover_subtitle: string | null;
   cover_edition_label: string | null;
+  week_start: string | null;
+  week_end: string | null;
   published_at: string | null;
   updated_at: string;
 };
