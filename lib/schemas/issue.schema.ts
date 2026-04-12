@@ -1,11 +1,11 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const developmentItemSchema = z.object({
   headline: z.string().min(1).max(200),
   summary: z.string().min(1).max(500),
   source: z.string().max(200),
   source_url: z.string().max(2000).optional(),
-  significance: z.enum(['high', 'medium']),
+  significance: z.enum(["high", "medium"]),
   category: z.string().max(100),
 });
 
@@ -21,14 +21,14 @@ const coverStorySchema = z.object({
 const implicationItemSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(500),
-  impact_level: z.enum(['transformative', 'significant', 'emerging']),
+  impact_level: z.enum(["transformative", "significant", "emerging"]),
   sector_relevance: z.array(z.string()),
 });
 
 const enterpriseItemSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(500),
-  adoption_stage: z.enum(['early', 'growing', 'mainstream']),
+  adoption_stage: z.enum(["early", "growing", "mainstream"]),
   industry: z.string().max(100),
 });
 
@@ -36,7 +36,12 @@ const industryWatchItemSchema = z.object({
   industry: z.string().min(1).max(100),
   headline: z.string().min(1).max(200),
   description: z.string().min(1).max(500),
-  trend_direction: z.enum(['accelerating', 'emerging', 'stabilising', 'declining']),
+  trend_direction: z.enum([
+    "accelerating",
+    "emerging",
+    "stabilising",
+    "declining",
+  ]),
 });
 
 const toolItemSchema = z.object({
@@ -66,7 +71,7 @@ export const createIssueSchema = z.object({
   edition: z.number().int().min(1),
   cover_headline: z.string().min(1).max(200).optional(),
   cover_subtitle: z.string().max(200).nullable().optional(),
-  format: z.enum(['weekly', 'monthly', 'quarterly']).optional(),
+  format: z.enum(["weekly", "monthly", "quarterly"]).optional(),
   week_start: z.string().nullable().optional(),
   week_end: z.string().nullable().optional(),
 });
@@ -86,7 +91,11 @@ export const updateIssueSchema = z.object({
   playbooks_json: z.array(playbookItemSchema).optional(),
   strategic_signals_json: z.array(strategicSignalItemSchema).optional(),
   why_this_matters: z.string().max(5000).nullable().optional(),
-  status: z.enum(['draft', 'review', 'approved', 'published', 'archived']).optional(),
+  status: z
+    .enum(["draft", "review", "approved", "published", "archived"])
+    .optional(),
+  qa_override: z.boolean().optional(),
+  qa_override_reason: z.string().max(500).nullable().optional(),
 });
 
 export type CreateIssueInput = z.infer<typeof createIssueSchema>;
