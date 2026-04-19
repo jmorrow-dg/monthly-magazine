@@ -112,26 +112,18 @@ export async function GET(request: Request) {
     const signalContext = buildWeeklySignalContext(feed);
     const weekRange = `${formatWeekDate(weekStart)} - ${formatWeekDate(weekEnd)}`;
 
-    // Step 1: Lead story
+    // Serialised to stay under Anthropic 30k input-tokens/min rate limit.
     const leadStory = await generateWeeklyLeadStory(signalContext);
-
-    // Step 2: Implications + strategic signals in parallel
-    const [implications, strategicSignals] = await Promise.all([
-      generateWeeklyImplications(leadStory, signalContext),
-      generateWeeklyStrategicSignals(leadStory, [], signalContext),
-    ]);
-
-    // Step 3: Remaining sections in parallel
-    const [enterprise, industryWatch, tools, playbook, briefingPrompts, executiveBriefing, editorial, outlookSignals] = await Promise.all([
-      generateWeeklyEnterprise(leadStory, signalContext),
-      generateWeeklyIndustryWatch(leadStory, signalContext),
-      generateWeeklyTools(signalContext),
-      generateWeeklyPlaybook(leadStory, signalContext),
-      generateWeeklyBriefingPrompts(leadStory, signalContext),
-      generateWeeklyExecutiveBriefing(leadStory, implications, signalContext),
-      generateWeeklyEditorial(leadStory, weekRange),
-      generateWeeklyOutlookSignals(leadStory, strategicSignals, signalContext),
-    ]);
+    const implications = await generateWeeklyImplications(leadStory, signalContext);
+    const strategicSignals = await generateWeeklyStrategicSignals(leadStory, [], signalContext);
+    const enterprise = await generateWeeklyEnterprise(leadStory, signalContext);
+    const industryWatch = await generateWeeklyIndustryWatch(leadStory, signalContext);
+    const tools = await generateWeeklyTools(signalContext);
+    const playbook = await generateWeeklyPlaybook(leadStory, signalContext);
+    const briefingPrompts = await generateWeeklyBriefingPrompts(leadStory, signalContext);
+    const executiveBriefing = await generateWeeklyExecutiveBriefing(leadStory, implications, signalContext);
+    const editorial = await generateWeeklyEditorial(leadStory, weekRange);
+    const outlookSignals = await generateWeeklyOutlookSignals(leadStory, strategicSignals, signalContext);
 
     // 7. Save content
     const updateData: Record<string, unknown> = {
