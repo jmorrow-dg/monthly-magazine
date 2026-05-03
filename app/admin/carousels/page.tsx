@@ -60,19 +60,30 @@ export default function CarouselsPage() {
 
   const handleGenerate = async () => {
     setGenerating(true);
-    try {
-      const res = await fetch('/api/carousels/generate', { method: 'POST' });
-      const data = await res.json();
-      if (data.carousel) {
-        await fetchCarousels();
-      } else {
-        alert(data.error || 'Generation failed');
+    setError(null);
+    setBatchProgress(batchCount > 1 ? { done: 0, total: batchCount } : null);
+
+    let succeeded = 0;
+    for (let i = 0; i < batchCount; i++) {
+      try {
+        const res = await fetch('/api/carousels/generate', { method: 'POST' });
+        const data = await res.json();
+        if (data.carousel) {
+          succeeded++;
+          if (batchCount > 1) setBatchProgress({ done: i + 1, total: batchCount });
+        } else {
+          setError(data.error || 'Generation failed');
+          break;
+        }
+      } catch (err) {
+        setError('Generation failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
+        break;
       }
-    } catch (err) {
-      alert('Generation failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setGenerating(false);
     }
+
+    if (succeeded > 0) await fetchCarousels();
+    setGenerating(false);
+    setBatchProgress(null);
   };
 
   const handleAction = async (carouselId: string, action: 'approve' | 'reject') => {
@@ -87,10 +98,10 @@ export default function CarouselsPage() {
         if (selectedCarousel?.id === carouselId) setSelectedCarousel(null);
       } else {
         const data = await res.json();
-        alert(data.error || `${action} failed`);
+        setError(data.error || `${action} failed`);
       }
     } catch {
-      alert(`${action} failed`);
+      setError(`${action} failed`);
     }
   };
 
@@ -100,6 +111,9 @@ export default function CarouselsPage() {
     setTimeout(() => setCopiedCaption(false), 2000);
   };
 
+  const [error, setError] = useState<string | null>(null);
+  const [batchCount, setBatchCount] = useState(1);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
 
   const exportWeek = async (weekNumber: number, year: number) => {
@@ -112,13 +126,11 @@ export default function CarouselsPage() {
         body: JSON.stringify({ weekNumber, year }),
       });
       const data = await res.json();
-      if (res.ok) {
-        alert(`Exported ${data.carousels.length} carousels to:\n${data.outputPath}`);
-      } else {
-        alert(data.error || 'Export failed');
+      if (!res.ok) {
+        setError(data.error || 'Export failed');
       }
     } catch {
-      alert('Export failed');
+      setError('Export failed');
     } finally {
       setExporting(null);
     }
@@ -166,7 +178,7 @@ export default function CarouselsPage() {
   return (
     <div className="p-6 max-w-7xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <h1 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-white">
             Carousel Engine
@@ -175,14 +187,38 @@ export default function CarouselsPage() {
             Generate carousels from Intelligence Hub signals. Download and distribute via Postbridge.
           </p>
         </div>
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          className="px-4 py-2 bg-[#B8860B] text-white text-sm font-medium rounded-md hover:bg-[#9A7209] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {generating ? 'Generating...' : 'Generate Carousel'}
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={batchCount}
+            onChange={(e) => setBatchCount(Number(e.target.value))}
+            disabled={generating}
+            className="px-3 py-2 bg-[#1C1C1C] text-white text-sm border border-[#333333] rounded-md disabled:opacity-50"
+          >
+            {[1,2,3,4,5,6,7,8,9,10].map(n => (
+              <option key={n} value={n}>{n === 1 ? '1 carousel' : `${n} carousels`}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="px-4 py-2 bg-[#B8860B] text-white text-sm font-medium rounded-md hover:bg-[#9A7209] disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            {generating
+              ? batchProgress
+                ? `Generating ${batchProgress.done}/${batchProgress.total}...`
+                : 'Generating...'
+              : 'Generate Carousel'}
+          </button>
+        </div>
       </div>
+
+      {/* Inline error banner */}
+      {error && (
+        <div className="mb-4 flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
+          <span className="text-red-400 text-sm flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-400/60 hover:text-red-400 text-xs mt-0.5">Dismiss</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2 mb-6">

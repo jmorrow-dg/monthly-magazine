@@ -7,7 +7,7 @@
 
 import { getSupabase } from '@/lib/supabase/client';
 
-const MAX_PER_WEEK = 5;
+const MAX_PER_WEEK = 20;
 
 interface LimitCheckResult {
   allowed: boolean;
